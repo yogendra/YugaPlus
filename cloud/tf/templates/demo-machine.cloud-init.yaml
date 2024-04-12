@@ -32,12 +32,6 @@ packages:
 
 
 write_files:
-- path: /home/yugabyte/bin/demo
-  permissions: "0700"
-  content: |
-    ${indent(4, demo-script)}
-  owner: yugabyte:yugabyte
-  defer: true
 - path: /home/yugabyte/secret/tls-cert.pem
   permissions: "0600"
   content: |
@@ -78,7 +72,9 @@ write_files:
     %{ endfor ~}
 
 runcmd:
-- su - yugabyte -c '/home/yugabyte/bin/demo boot'
+- su - yugabyte -c 'curl -sSL https://raw.githubusercontent.com/yogendra/dotfiles/master/.tmux.conf-latest -o /home/yugabyte/.tmux.conf'
+- su - yugabyte -c 'curl -sSL https://raw.githubusercontent.com/yogendra/YugaPlus/apj-sb/cloud/tf/templates/demo.sh -o /home/yugabyte/bin/demo ; chmod 700 /home/yugabyte/bin/demo'
+- su - yugabyte -c '/home/yugabyte/bin/demo shell-setup'
 
 
 
