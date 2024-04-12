@@ -34,24 +34,6 @@ packages:
 
 
 write_files:
-- path: /home/yugabyte/secret/tls-cert.pem
-  permissions: "0600"
-  content: |
-    ${indent(4,tls-cert)}
-  owner: yugabyte:yugabyte
-  defer: true
-- path: /home/yugabyte/secret/tls-key.pem
-  permissions: "0600"
-  content: |
-    ${indent(4,tls-key)}
-  owner: yugabyte:yugabyte
-  defer: true
-- path: /home/yugabyte/secret/tls.p12
-  permissions: "0600"
-  content: !!binary |
-    ${indent(4,tls-p12)}
-  owner: yugabyte:yugabyte
-  defer: true
 - path: /home/yugabyte/.ssh/id_rsa
   permissions: "0600"
   content: |

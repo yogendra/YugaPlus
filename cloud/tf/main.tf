@@ -4,9 +4,6 @@ terraform {
       source  = "hashicorp/google"
       version = "5.24.0"
     }
-    acme = {
-      source = "vancluever/acme"
-    }
   }
 }
 
@@ -161,35 +158,12 @@ locals {
   project-domain = trimsuffix("${local.prefix}.${data.google_dns_managed_zone.dns.dns_name}", ".")
 }
 
-provider "acme" {
-  server_url = "https://acme-staging-v02.api.letsencrypt.org/directory"
-  #server_url = "https://acme-v02.api.letsencrypt.org/directory"
-}
 
 resource "tls_private_key" "private_key" {
   algorithm = "RSA"
 }
 
-resource "acme_registration" "registration" {
-  account_key_pem = tls_private_key.private_key.private_key_pem
-  email_address   = local.owner-email # TODO put your own email in here!
-}
 
-resource "acme_certificate" "certificate" {
-  account_key_pem           = acme_registration.registration.account_key_pem
-  common_name               = local.project-domain
-  subject_alternative_names = ["*.${local.project-domain}"]
-
-  dns_challenge {
-    provider = "gcloud"
-
-    config = {
-      GCE_PROJECT = local.gcp-project
-      GCE_ZONE_ID = local.gcp-dns-zone
-    }
-  }
-  depends_on = [acme_registration.registration]
-}
 resource "local_sensitive_file" "ssh-private-key" {
   content         = tls_private_key.private_key.private_key_openssh
   file_permission = "0600"
@@ -200,25 +174,6 @@ resource "local_sensitive_file" "ssh-public-key" {
   content         = tls_private_key.private_key.public_key_openssh
   file_permission = "0600"
   filename        = "${path.module}/private/sshkey.pub"
-}
-
-
-resource "local_sensitive_file" "cert-pem" {
-  content         = acme_certificate.certificate.certificate_pem
-  file_permission = "0600"
-  filename        = "${path.module}/private/server-cert.pem"
-}
-
-resource "local_sensitive_file" "cert-p12" {
-  content_base64  = acme_certificate.certificate.certificate_p12
-  file_permission = "0600"
-  filename        = "${path.module}/private/server-cert.p12"
-}
-
-resource "local_sensitive_file" "key-pem" {
-  content         = acme_certificate.certificate.private_key_pem
-  file_permission = "0600"
-  filename        = "${path.module}/private/server-key.pem"
 }
 
 data "cloudinit_config" "conf" {
@@ -235,9 +190,6 @@ data "cloudinit_config" "conf" {
       yb-arch        = local.yb-arch
       ssh-public-key = local.ssh-public-key
       region-name    = each.value
-      tls-key     = acme_certificate.certificate.private_key_pem
-      tls-cert    = acme_certificate.certificate.certificate_pem
-      tls-p12     = acme_certificate.certificate.certificate_p12
       ssh-key     = tls_private_key.private_key.private_key_openssh
       ssh-key-pub = tls_private_key.private_key.public_key_openssh
       demo-script = file("./templates/demo.sh")
