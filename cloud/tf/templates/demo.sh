@@ -49,9 +49,9 @@ EOF
 }
 
 function self-update(){
-  curl -sSL https://raw.githubusercontent.com/yogendra/YugaPlus/apj-sb/cloud/tf/templates/demo.sh -o $SCRIPT_DIR/demo.new
-  chmod 700 $SCRIPT_DIR/demo.new
-  mv $SCRIPT_DIR/demo.new $SCRIPT_DIR/demo
+  curl -sSL https://raw.githubusercontent.com/yogendra/YugaPlus/apj-sb/cloud/tf/templates/demo.sh -o $SCRIPT.new
+  chmod 700 $SCRIPT.new
+  mv $SCRIPT.new $SCRIPT
 }
 function shell-setup(){
   echo export REGION_NAME=$REGION_NAME >> $HOME/.bashrc
@@ -62,9 +62,15 @@ function shell-setup(){
 }
 
 function shell(){
-  tmux new-session -d -s demo -n shell "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
-  tmux split-window -t demo:shell -p 66  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[1]}"
-  tmux split-window -t demo:shell -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
+  tmux kill-session -t demo
+
+  tmux new-session -d -s demo -n shell
+
+  tmux new-window -a -t demo:shell -n db  "$HOME/yugabyte/bin/ysqlsh -h $NODE_IP"
+
+  tmux new-window -a -t demo:db -n admin "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
+  tmux split-window -t demo:admin -p 66  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[1]}"
+  tmux split-window -t demo:admin -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
 }
 
 function db-install(){
@@ -131,6 +137,8 @@ function db-configure(){
     $YB_HOME/bin/yb-admin \
       -master_addresses $YB_MASTERS \
       set_preferred_zones $ZONE_PREFERENCE
+
+    $YB_HOME/bin/ysqlsh -h $NODE_IP -c 'ALTER ROLE yugabyte SET yb_silence_advisory_locks_not_supported_error=on;'
   else
     echo "Skipping DB configuration as its not the primary node"
   fi
