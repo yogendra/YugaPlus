@@ -78,6 +78,7 @@ locals {
     YB_RELEASE=local.yb-release
     YB_ARCH=local.yb-arch
     APP_BRANCH="superbowl-demo"
+    REACT_APP_RUNTIME_ENVIRONMENT="docker"
   }}
 }
 provider "google" {
