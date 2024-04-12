@@ -37,6 +37,10 @@ COMAMNDS
       run command on a remote machine
   run-on-all
       run command on all machine
+  shell
+      create a shell for all nodes
+  self-update
+      run self update
   search
       run search demo
   update
@@ -44,6 +48,11 @@ COMAMNDS
 EOF
 }
 
+function self-update(){
+  curl -sSL https://raw.githubusercontent.com/yogendra/YugaPlus/apj-sb/cloud/tf/templates/demo.sh -o $SCRIPT_DIR/demo.new
+  chmod 700 $SCRIPT_DIR/demo.new
+  mv $SCRIPT_DIR/demo.new $SCRIPT_DIR/demo
+}
 function shell-setup(){
   echo export REGION_NAME=$REGION_NAME >> $HOME/.bashrc
   echo export YB_HOME=$YB_HOME >> $HOME/.bashrc
