@@ -237,6 +237,12 @@ function boot(){
   echo DB Install
   db-install
 
+  echo DB Start
+  db-install
+
+  echo DB Configure
+  db-configure
+
   echo App setup
   app-setup
 }
