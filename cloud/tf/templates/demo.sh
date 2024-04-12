@@ -73,7 +73,7 @@ function shell(){
   tmux split-window -t demo:admin -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
 
   tmux select-window -t demo:shell
-  tmus attach-session -t demo
+  tmux attach-session -t demo
 }
 
 function db-install(){
