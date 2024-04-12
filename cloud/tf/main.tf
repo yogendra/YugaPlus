@@ -76,6 +76,7 @@ locals {
     YB_VERSION=local.yb-version
     YB_RELEASE=local.yb-release
     YB_ARCH=local.yb-arch
+    APP_BRANCH="apj-sb"
   }}
 }
 provider "google" {

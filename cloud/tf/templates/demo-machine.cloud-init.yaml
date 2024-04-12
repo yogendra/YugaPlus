@@ -55,9 +55,11 @@ apt:
 packages:
   - ca-certificates
   - curl
+  - direnv
   - git
   - gnupg
   - httpie
+  - maven
   - python-apt
   - python3-distutils
   - tmux

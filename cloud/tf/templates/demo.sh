@@ -74,7 +74,7 @@ function app-setup(){
   killall java || echo "No java processes found"
   mkdir -p $HOME/sample_apps
   [[ -d $HOME/sample_apps/YugaPlus ]] && rm -rf $HOME/sample_apps/YugaPlus
-  git clone https://github.com/YugabyteDB-Samples/YugaPlus.git $HOME/sample_apps/YugaPlus
+  git clone -b $APP_BRANCH https://github.com/YugabyteDB-Samples/YugaPlus.git $HOME/sample_apps/YugaPlus
   ( cd $HOME/sample_apps/YugaPlus/backend;  ./mvnw clean package -DskipTests)
 }
 
