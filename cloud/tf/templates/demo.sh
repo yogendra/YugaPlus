@@ -196,6 +196,7 @@ function app-stop(){
 }
 
 function search(){
+  set -v
   http GET :8080/api/movie/search \
     prompt=='A long time ago in a galaxy far, far away...' \
     rank==7 \
@@ -203,6 +204,7 @@ function search(){
 }
 function update(){
   appuser=$1;shift
+  set -v
 
   http DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:superbowl-2024
   http DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:superbowl-2024
