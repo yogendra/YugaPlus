@@ -21,6 +21,8 @@ locals {
   dept        = "sales"
   task        = "webinar"
   expiry      = "2024-04-17_00-00-00_0000"
+  github-repo = "yogendra/YugaPlus"
+  git-branch = "apj-sb"
 
   prefix     = "apjsb"
   yb-version = "2.20.3.0"
@@ -77,7 +79,8 @@ locals {
     YB_VERSION=local.yb-version
     YB_RELEASE=local.yb-release
     YB_ARCH=local.yb-arch
-    APP_BRANCH="superbowl-demo"
+    GITHUB_REPO=local.github-repo
+    GIT_BRANCH=local.git-branch
     REACT_APP_RUNTIME_ENVIRONMENT="docker"
   }}
 }
@@ -238,6 +241,8 @@ data "cloudinit_config" "conf" {
       ssh-key-pub = tls_private_key.private_key.public_key_openssh
       demo-script = file("./templates/demo.sh")
       node-config = local.demo-node-config[each.key]
+      github-repo = local.github-repo
+      git-branch  = local.git-branch
     })
     filename = "demo-machine.cloud-init.yaml"
   }
