@@ -220,20 +220,14 @@ function run-on-all(){
 }
 
 function boot(){
+  echo Shell Setup
+  shell-setup
+
   echo DB Install
   db-install
 
-  echo DB Install
-  db-start
-
-  echo DB Configure
-  db-configure
-
   echo App setup
   app-setup
-
-  echo App Start
-  app-start
 }
 
 OP=${1:-_help}
