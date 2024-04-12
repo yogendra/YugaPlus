@@ -49,7 +49,7 @@ EOF
 }
 
 function self-update(){
-  curl -sSL https://raw.githubusercontent.com/yogendra/YugaPlus/apj-sb/cloud/tf/templates/demo.sh -o $SCRIPT.new
+  curl -sSL https://raw.githubusercontent.com/$GITHUB_REPO/$GIT_BRANCH/cloud/tf/templates/demo.sh -o $SCRIPT.new
   chmod 700 $SCRIPT.new
   mv $SCRIPT.new $SCRIPT
 }
@@ -150,14 +150,14 @@ function db-shell(){
   $YB_HOME/bin/ysqlsh -h $(hostname -I)
 }
 function db-prepare-geopart(){
-  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library.sql
+  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
 }
 # Clone and build app
 function app-setup(){
   app-stop
   mkdir -p $HOME/sample_apps
   [[ -d $HOME/sample_apps/YugaPlus ]] && rm -rf $HOME/sample_apps/YugaPlus
-  git clone -b $APP_BRANCH https://github.com/YugabyteDB-Samples/YugaPlus.git $HOME/sample_apps/YugaPlus
+  git clone -b $GIT_BRANCH https://github.com/$GITHUB_REPO.git $HOME/sample_apps/YugaPlus
   pushd $HOME/sample_apps/YugaPlus/backend
   mvn clean package -DskipTests
   popd
@@ -202,7 +202,7 @@ function search(){
     X-Api-Key:superbowl-2024
 }
 function update(){
-  appuser="$REGION@gmail.com"
+  appuser=$1;shift
 
   http DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:superbowl-2024
   http DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:superbowl-2024
