@@ -200,19 +200,19 @@ function search(){
   http GET :8080/api/movie/search \
     prompt=='A long time ago in a galaxy far, far away...' \
     rank==7 \
-    X-Api-Key:superbowl-2024
+    X-Api-Key:$BACKEND_API_KEY
 }
 function update(){
   appuser=$1;shift
   set -v
 
-  http DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:superbowl-2024
-  http DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:superbowl-2024
-  http DELETE :8080/api/library/remove/11 user==$appuser X-Api-Key:superbowl-2024
+  http DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http DELETE :8080/api/library/remove/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
 
-  http PUT :8080/api/library/add/11 user==$appuser X-Api-Key:superbowl-2024
-  http PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:superbowl-2024
-  http PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:superbowl-2024
+  http PUT :8080/api/library/add/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
 }
 function run-on(){
   node=$1; shift
