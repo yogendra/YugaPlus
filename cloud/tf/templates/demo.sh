@@ -4,6 +4,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PROJECT_DIR=$(cd $SCRIPT_DIR/..; pwd)
 SCRIPT=$0
 
+YB_HOME=$HOME/yugabyte
 [[ -f $SCRIPT_DIR/demo-env ]] && source $SCRIPT_DIR/demo-env
 
 function _help(){
@@ -12,77 +13,141 @@ YugabyteDB Demo - YugaPlus
 $SCRIPT <COMMANDS> [parameters...]
 
 COMAMNDS
-  init     - initial setup
-  shell-setup - Setup Bash shell
-  db-install - Install database binaries
-  db-start - Starts database
-  db-configure - configures database
-  db-prepare-geopart - prepare geo partitioning for database
-  app-setup - download and build application
-  app-start - start application
-  search - run search demo
-  update - run update demo
+  boot
+      initial setup
+  shell-setup
+      Setup Bash shell
+  db-install
+      Install database binaries
+  db-start
+      Starts database
+  db-stop
+      Starts database
+  db-configure
+      configures database
+  db-prepare-geopart
+      prepare geo partitioning for database
+  app-setup
+      download and build application
+  app-start
+      start application
+  app-stop
+      stop application
+  run-on
+      run command on a remote machine
+  run-on-all
+      run command on all machine
+  search
+      run search demo
+  update
+      run update demo
 EOF
 }
 
 function shell-setup(){
-  echo export REGION=$REGION >> $HOME/.bashrc
-  echo 'export PATH=$HOME/yugabyte/bin:$HOME/yugabyte/postgres/bin:$HOME/yugabyte/tools:$PATH' >> $HOME/.bashrc
-  echo 'export PS1="[ $REGION :: \u@\h \W]\$  "' >> $HOME/.bashrc
-  echo 'printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n $REGION | base64)' >> $HOME/.bashrc
+  echo export REGION_NAME=$REGION_NAME >> $HOME/.bashrc
+  echo export YB_HOME=$YB_HOME >> $HOME/.bashrc
+  echo 'export PATH=$YB_HOME/bin:$YB_HOME/postgres/bin:$YB_HOME/tools:$PATH' >> $HOME/.bashrc
+  echo 'export PS1='"'"'\[\e[38;5;202;48;5;55m\] \[\e[1m\]${REGION_NAME}\[\e[22m\] \[\e[38;5;55;48;5;202m\] \w \[\e[0m\] \$ '"'"'' >> $HOME/.bashrc
+  echo 'printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n $REGION_NAME | base64)' >> $HOME/.bashrc
 }
+
+
 
 function db-install(){
-  mkdir -p $HOME/yugabyte
-  curl -sSL https://downloads.yugabyte.com/releases/${YB_VERSION}/yugabyte-${YB_RELEASE}-linux-${YB_ARCH}.tar.gz | tar -C $HOME/yugabyte --strip-component=1 -xz
-  $HOME/yugabyte/bin/post_install.sh
+  mkdir -p $YB_HOME
+  curl -sSL https://downloads.yugabyte.com/releases/${YB_VERSION}/yugabyte-${YB_RELEASE}-linux-${YB_ARCH}.tar.gz | tar -C $YB_HOME --strip-component=1 -xz
+  $YB_HOME/bin/post_install.sh
 }
+function _db_wait(){
+  db=$1; shift
 
+  echo -n  "Wait for ${db} to be up ."
+  until $YB_HOME/postgres/bin/pg_isready -h $db &> /dev/null;
+  do
+    echo -n "."
+    sleep $((1 + $RANDOM % 10))
+  done
+  echo " Ready"
+}
 function db-start(){
-  if [[ $NODE_IP -ne $YB_FIRST_NODE ]]
+  if [[ $YB_FIRST_NODE == $NODE_IP  ]]
   then
-    yugabyted \
+    $YB_HOME/bin/yugabyted \
       start \
       --advertise_address=$NODE_IP \
-      --base_dir=$HOME/yugabyte_base_dir \
+      --cloud_location=$YB_LOCATION \
+      --fault_tolerance=region
+  else
+
+    _db_wait $YB_FIRST_NODE
+    echo -n "Wait for all existing masters to be ready "
+    while [[ $($YB_HOME/bin/yb-admin -init_master_addrs $YB_FIRST_NODE  list_all_masters json | grep -v ^Master | grep -vE '(LEADER|FOLLOWER)' | wc -l) -gt 0 ]] ; do
+      echo -n "."
+      sleep $((1 + $RANDOM % 10))
+    done
+    echo " Ready"
+
+
+    $YB_HOME/bin/yugabyted \
+      start \
+      --advertise_address=$NODE_IP \
       --cloud_location=$YB_LOCATION \
       --fault_tolerance=region \
       --join=$YB_FIRST_NODE
-  else
-    yugabyted \
-      start \
-      --advertise_address=$NODE_IP \
-      --base_dir=$HOME/yugabyte_base_dir \
-      --cloud_location=$YB_LOCATION \
-      --fault_tolerance=region
   fi
 }
-
+function db-stop(){
+    $YB_HOME/bin/yugabyted \
+      stop \
+      --advertise_address=$NODE_IP
+}
 function db-configure(){
+  if [[ $YB_FIRST_NODE ==  $NODE_IP  ]]
+  then
+    for dbnode in "${YB_NODES[@]}"
+    do
+      if [[ $dbnode != $NODE_IP ]]; then
+      _db_wait $dbnode
+      fi
+    done
+    echo "All nodes ready."
 
-  yugabyted configure data_placement --fault_tolerance=region --base_dir=$HOME/yugabyte_base_dir
+    $YB_HOME/bin/yugabyted configure data_placement --fault_tolerance=region
 
-  yb-admin \
-    -init_master_addrs  \
-    set_preferred_zones $ZONE_PREFERENCE
+    $YB_HOME/bin/yb-admin \
+      -master_addresses $YB_MASTERS \
+      set_preferred_zones $ZONE_PREFERENCE
+  else
+    echo "Skipping DB configuration as its not the primary node"
+  fi
+}
+function db-shell(){
+  $YB_HOME/bin/ysqlsh -h $(hostname -I)
 }
 function db-prepare-geopart(){
-  ysqlsh -h $(hostname -I) -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library.sql
+  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library.sql
 }
 # Clone and build app
 function app-setup(){
-  killall java || echo "No java processes found"
+  app-stop
   mkdir -p $HOME/sample_apps
   [[ -d $HOME/sample_apps/YugaPlus ]] && rm -rf $HOME/sample_apps/YugaPlus
   git clone -b $APP_BRANCH https://github.com/YugabyteDB-Samples/YugaPlus.git $HOME/sample_apps/YugaPlus
-  ( cd $HOME/sample_apps/YugaPlus/backend;  ./mvnw clean package -DskipTests)
+  pushd $HOME/sample_apps/YugaPlus/backend
+  mvn clean package -DskipTests
+  popd
+
+  pushd $HOME/sample_apps/YugaPlus/frontend
+  npm install
+  popd
 }
 
 # Start Application: optional argument enable_follower_reads
 function app-start(){
   if [[ -z $OPENAI_API_KEY ]]; then echo "OPENAI_API_KEY not set, quitting!"; echo 1; fi
 
-  if [ "$1" == "enable_follower_reads" ]; then
+  if [ "${1:-x}" == "enable_follower_reads" ]; then
       export DB_CONN_INIT_SQL="SET session characteristics as transaction read only;SET yb_read_from_followers = true;"
       echo "Enabling follower reads:"
       echo $DB_CONN_INIT_SQL
@@ -91,10 +156,19 @@ function app-start(){
   echo "Connecting to the database node:"
   echo  $DB_URL
 
-  sudo killall java || echo "No running java processes found"
+  app-stop
 
+  pushd $HOME/sample_apps/YugaPlus/backend
+  nohup java -jar target/yugaplus-backend-1.0.0.jar &>> /tmp/app-backend.log &
+  popd
 
-  nohup java -jar $HOME/sample_apps/YugaPlus/target/yugaplus-backend-1.0.0.jar &> /tmp/application.log &
+  pushd $HOME/sample_apps/YugaPlus/frontend
+  nohup npm start &>> /tmp/app-frontend.log &
+  popd
+}
+function app-stop(){
+  killall -u yugabyte java &>> /dev/null || echo "No running java processes found"
+  killall -u yugabyte node &>> /dev/null || echo "No running java processes found"
 }
 
 function search(){
@@ -114,16 +188,45 @@ function update(){
   http PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:superbowl-2024
   http PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:superbowl-2024
 }
+function run-on(){
+  node=$1; shift
+  if [[ $node == $NODE_IP ]]; then
+    echo "$node: Run locally"
+    "$@"
+  else
+    echo "$node: Run remotely"
+    ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugbayte@$node demo "$@"
+  fi
 
-function init(){
+}
+function run-on-all(){
+  for node in "${YB_NODES[@]}"
+  do
+    run-on $node "$@"
+  done
+}
+
+function boot(){
+  echo Shell Setup
   shell-setup
+
+  echo DB Install
   db-install
+
+  echo DB Install
+  db-start
+
+  echo DB Configure
+  db-configure
+
+  echo App setup
   app-setup
+
+  echo App Start
+  app-start
 }
 
 OP=${1:-_help}
 if [[ $# -gt 1 ]] ; then shift ; fi
 
 $OP "$@"
-
-

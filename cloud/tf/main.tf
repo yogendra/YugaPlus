@@ -44,7 +44,7 @@ locals {
   gcp-dns-zone           = "ws-apj-yugabyte-com"
 
   gcp-zones =  { for region, _ in local.gcp-regions: region =>  data.google_compute_zones.az[region].names[0]}
-  zone-preference = join(",", [ for index, region in keys(local.gcp-regions): "gcp.${region}.${local.gcp-zones[region]}:${index}"])
+  zone-preference = "'${join(" ", [ for index, region in keys(local.gcp-regions): "gcp.${region}.${local.gcp-zones[region]}:${index+1}"])}'"
   gcp-region-subnet-cidr = { for index, region in keys(local.gcp-regions) : region => cidrsubnet(local.gcp-cidr, 4, index) }
 
   ssh-public-key = tls_private_key.private_key.public_key_openssh
@@ -62,7 +62,7 @@ locals {
     REGION = region
     ZONE = local.gcp-zones[region]
     ZONE_PREFERENCE = local.zone-preference
-    OPEN_API_KEY = local.openai_api_key
+    OPENAI_API_KEY = local.openai_api_key
     DB_URL = "jdbc:yugabytedb://${local.node-private-ips-by-region[region]}:5433/yugabyte"
     DB_USER = "yugabyte"
     DB_PASSWORD = "yugabyte"
@@ -71,12 +71,13 @@ locals {
     PORT = "8080"
     NODE_IP = google_compute_address.private-ip[region].address
     YB_MASTERS = join(",", formatlist("%s:7100",local.node-private-ips))
+    YB_NODES = "( ${join(" ",local.node-private-ips)} )"
     YB_FIRST_NODE = local.node-private-ips[0]
     YB_LOCATION="gcp.${region}.${local.gcp-zones[region]}"
     YB_VERSION=local.yb-version
     YB_RELEASE=local.yb-release
     YB_ARCH=local.yb-arch
-    APP_BRANCH="apj-sb"
+    APP_BRANCH="superbowl-demo"
   }}
 }
 provider "google" {
@@ -232,6 +233,8 @@ data "cloudinit_config" "conf" {
       tls-key     = acme_certificate.certificate.private_key_pem
       tls-cert    = acme_certificate.certificate.certificate_pem
       tls-p12     = acme_certificate.certificate.certificate_p12
+      ssh-key     = tls_private_key.private_key.private_key_openssh
+      ssh-key-pub = tls_private_key.private_key.public_key_openssh
       demo-script = file("./templates/demo.sh")
       node-config = local.demo-node-config[each.key]
     })
@@ -327,8 +330,10 @@ output "vms" {
           http://${google_dns_record_set.public-fqdn[region].name}:7000/
  Tserver: http://${google_compute_address.public-ip[region].address}:9000/
           http://${google_dns_record_set.public-fqdn[region].name}:9000/
-     App: http://${google_compute_address.public-ip[region].address}:8080/
+ App API: http://${google_compute_address.public-ip[region].address}:8080/
           http://${google_dns_record_set.public-fqdn[region].name}:8080
+  App UI: http://${google_compute_address.public-ip[region].address}:3000/
+          http://${google_dns_record_set.public-fqdn[region].name}:3000
      SSH: ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${google_compute_address.public-ip[region].address}
           ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${google_dns_record_set.public-fqdn[region].name}
           gcloud compute ssh --zone ${google_compute_instance.vm[region].zone} ${google_compute_instance.vm[region].name}
