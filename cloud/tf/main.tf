@@ -66,7 +66,7 @@ locals {
     DB_URL = "jdbc:yugabytedb://${local.node-private-ips-by-region[region]}:5433/yugabyte"
     DB_USER = "yugabyte"
     DB_PASSWORD = "yugabyte"
-    DB_DRIVER_CLASS = "com.yugabyte.Driver"
+    DB_DRIVER_CLASS_NAME = "com.yugabyte.Driver"
     BACKEND_API_KEY= "superbowl-2024"
     PORT = "8080"
     NODE_IP = google_compute_address.private-ip[region].address
