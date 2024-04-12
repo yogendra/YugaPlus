@@ -2,7 +2,7 @@
 
 Follow this guide to create a multi-region cluster and see how to achieve low-latency and fault tolerance across distant locations.
 
-NOTE, all the tests were perfomed on commodity hardware in a cloud environment (e2-standard-4). Four vCPUs for each VM.
+NOTE, all the tests were performed on commodity hardware in a cloud environment (e2-standard-4). Four vCPUs for each VM.
 What is a virtual CPU in Compute Engine? On Compute Engine, each virtual CPU (vCPU) is implemented as a single hardware hyper-thread on one of the available CPU Platforms. This is my sandbox environment for functional experiments. The environment was constrained, non of the components (DB, app, etc.) were optimized.
 
 ## Prerequisites
