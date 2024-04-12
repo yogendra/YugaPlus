@@ -62,7 +62,7 @@ function shell-setup(){
 }
 
 function shell(){
-  tmux kill-session -t demo
+  tmux kill-session -t demo &>> /dev/null || echo "No running shell"
 
   tmux new-session -d -s demo -n shell
 
@@ -71,6 +71,9 @@ function shell(){
   tmux new-window -a -t demo:db -n admin "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
   tmux split-window -t demo:admin -p 66  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[1]}"
   tmux split-window -t demo:admin -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
+
+  tmux select-window -t demo:shell
+  tmus attach-session -t demo
 }
 
 function db-install(){
