@@ -14,7 +14,7 @@ $SCRIPT <COMMANDS> [parameters...]
 
 COMAMNDS
   boot
-      initial setup
+      initial setup - Start db and app
   shell-setup
       Setup Bash shell
   db-install
@@ -52,7 +52,11 @@ function shell-setup(){
   echo 'printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n $REGION_NAME | base64)' >> $HOME/.bashrc
 }
 
-
+function shell(){
+  tmux new-session -d -s demo -n shell "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
+  tmux split-window -t demo:shell -p 66  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[1]}"
+  tmux split-window -t demo:shell -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
+}
 
 function db-install(){
   mkdir -p $YB_HOME
@@ -195,7 +199,7 @@ function run-on(){
     "$@"
   else
     echo "$node: Run remotely"
-    ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugbayte@$node demo "$@"
+    ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@$node demo "$@"
   fi
 
 }
@@ -207,9 +211,6 @@ function run-on-all(){
 }
 
 function boot(){
-  echo Shell Setup
-  shell-setup
-
   echo DB Install
   db-install
 
