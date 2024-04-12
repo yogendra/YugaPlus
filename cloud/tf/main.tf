@@ -82,6 +82,7 @@ locals {
     GITHUB_REPO=local.github-repo
     GIT_BRANCH=local.git-branch
     REACT_APP_RUNTIME_ENVIRONMENT="docker"
+    SPRING_FLYWAY_ENABLED=local.node-private-ips[0] ==  google_compute_address.private-ip[region].address ? "true" : "false"
   }}
 }
 provider "google" {
