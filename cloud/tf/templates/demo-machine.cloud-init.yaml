@@ -16,6 +16,7 @@ users:
 packages:
   - ca-certificates
   - curl
+  - cowsay
   - direnv
   - git
   - gnupg
@@ -26,6 +27,7 @@ packages:
   - python3-distutils
   - python-is-python3
   - tmux
+  - toilet
   - wget
   - jq
   - zulu21-ca-jdk-headless
