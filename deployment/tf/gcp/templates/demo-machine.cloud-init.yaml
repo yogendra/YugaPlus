@@ -55,8 +55,8 @@ write_files:
 
 runcmd:
 - su - yugabyte -c 'mkdir -p ~/.config/tmux ; curl -sSL https://raw.githubusercontent.com/yogendra/dotfiles/master/.tmux.conf-latest -o /home/yugabyte/.config/tmux/tmux.conf; ln -s /home/yugabyte/.config/tmux/tmux.conf /home/yugabyte/.tmux.conf'
-- su - yugabyte -c 'curl -sSL https://raw.githubusercontent.com/${github-repo}/${git-branch}/cloud/tf/templates/demo.sh -o /home/yugabyte/bin/demo ; chmod 700 /home/yugabyte/bin/demo'
-- su - yugabyte -c '/home/yugabyte/bin/demo boot'
+- su - yugabyte -c 'curl -sSL ${demo-script-url} -o /home/yugabyte/bin/demo ; chmod 700 /home/yugabyte/bin/demo'
+- su - yugabyte -c '/home/yugabyte/bin/demo ${demo-script-boot-command}'
 
 
 
