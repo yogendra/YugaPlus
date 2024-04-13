@@ -5,11 +5,14 @@ PROJECT_DIR=$(cd $SCRIPT_DIR/..; pwd)
 SCRIPT=$0
 
 YB_HOME=$HOME/yugabyte
-[[ -f $SCRIPT_DIR/demo-env ]] && source $SCRIPT_DIR/demo-env
+
+[[ -f $SCRIPT_DIR/demo-env ]] && source $SCRIPT.env
+
+APP_ROOT_DIR=$HOME/sample_apps/${APP_MACHINE_NAME}
 
 function _help(){
   cat <<EOF
-YugabyteDB Demo - YugaPlus
+$APP_NAME
 $SCRIPT <COMMANDS> [parameters...]
 
 COMAMNDS
@@ -34,11 +37,11 @@ COMAMNDS
   app-stop
       stop application
   run-on
-      run command on a remote machine
+      run command on a remote node
   run-on-all
-      run command on all machine
+      run command on all nodes
   shell
-      create a shell for all nodes
+      create a demo shell
   self-update
       run self update
   search
@@ -150,19 +153,19 @@ function db-shell(){
   $YB_HOME/bin/ysqlsh -h $(hostname -I)
 }
 function db-prepare-geopart(){
-  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
+  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
 }
 # Clone and build app
 function app-setup(){
   app-stop
-  mkdir -p $HOME/sample_apps
-  [[ -d $HOME/sample_apps/YugaPlus ]] && rm -rf $HOME/sample_apps/YugaPlus
-  git clone -b $GIT_BRANCH https://github.com/$GITHUB_REPO.git $HOME/sample_apps/YugaPlus
-  pushd $HOME/sample_apps/YugaPlus/backend
+  [[ -d ${APP_ROOT_DIR} ]] && rm -rf ${APP_ROOT_DIR}
+  mkdir -p $APP_ROOT_DIR
+  git clone -b $GIT_BRANCH https://github.com/$GITHUB_REPO.git ${APP_ROOT_DIR}
+  pushd ${APP_ROOT_DIR}/backend
   mvn clean package -DskipTests
   popd
 
-  pushd $HOME/sample_apps/YugaPlus/frontend
+  pushd ${APP_ROOT_DIR}/frontend
   npm install
   popd
 }
@@ -182,11 +185,11 @@ function app-start(){
 
   app-stop
 
-  pushd $HOME/sample_apps/YugaPlus/backend
-  nohup java -jar target/yugaplus-backend-1.0.0.jar &>> /tmp/app-backend.log &
+  pushd ${APP_ROOT_DIR}/backend
+  nohup java -jar target/*.jar &>> /tmp/app-backend.log &
   popd
 
-  pushd $HOME/sample_apps/YugaPlus/frontend
+  pushd ${APP_ROOT_DIR}/frontend
   nohup npm start &>> /tmp/app-frontend.log &
   popd
 }
