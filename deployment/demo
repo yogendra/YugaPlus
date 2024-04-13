@@ -231,7 +231,7 @@ function run-on(){
     "$@"
   else
     echo "$node: Run remotely"
-    ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@$node demo "$@"
+    ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@$node $SCRIPT "$@"
   fi
 
 }
