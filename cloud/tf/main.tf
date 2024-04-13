@@ -7,12 +7,16 @@ terraform {
   }
 }
 
+
 variable "openai_api_key" {
   type = string
   description = "Open AI API Key"
   sensitive = true
 }
+
 locals {
+  app-name    = "YugabyteDB Samples - YugaPlus"
+  app-machine-name = "YugaPlus"
   owner       = "yrampuria"
   owner-email = "yrampuria@yugabyte.com"
   dept        = "sales"
@@ -25,6 +29,8 @@ locals {
   yb-version = "2.20.3.0"
   yb-release = "2.20.3.0-b68"
   yb-arch    = "x86_64"
+  allowed-web-client = []
+  allowed-admin-client = []
   openai_api_key = var.openai_api_key
   gcp-project       = "apj-partner-enablement"
   gcp-network       = "${local.prefix}-vpc"
@@ -56,32 +62,41 @@ locals {
   node-private-ips-by-region = { for region, config in google_compute_address.private-ip : region => config.address }
   node-private-ips = [ for region, ip in local.node-private-ips-by-region : ip ]
   node-public-ips = [ for region, config in google_compute_address.public-ip : config.address ]
-  demo-node-config = { for region, name in local.gcp-regions: region => {
-    REGION_NAME = name
-    REGION = region
-    ZONE = local.gcp-zones[region]
-    ZONE_PREFERENCE = local.zone-preference
-    OPENAI_API_KEY = local.openai_api_key
-    DB_URL = "jdbc:yugabytedb://${local.node-private-ips-by-region[region]}:5433/yugabyte"
-    DB_USER = "yugabyte"
-    DB_PASSWORD = "yugabyte"
-    DB_DRIVER_CLASS_NAME = "com.yugabyte.Driver"
-    BACKEND_API_KEY= "superbowl-2024"
-    PORT = "8080"
-    NODE_IP = google_compute_address.private-ip[region].address
-    YB_MASTERS = join(",", formatlist("%s:7100",local.node-private-ips))
-    YB_NODES = "( ${join(" ",local.node-private-ips)} )"
-    YB_FIRST_NODE = local.node-private-ips[0]
-    YB_LOCATION="gcp.${region}.${local.gcp-zones[region]}"
-    YB_VERSION=local.yb-version
-    YB_RELEASE=local.yb-release
-    YB_ARCH=local.yb-arch
-    GITHUB_REPO=local.github-repo
-    GIT_BRANCH=local.git-branch
-    REACT_APP_RUNTIME_ENVIRONMENT="docker"
-    SPRING_FLYWAY_ENABLED=local.node-private-ips[0] ==  google_compute_address.private-ip[region].address ? "true" : "false"
-  }}
+  my-ip = "${chomp(data.http.my-ip.response_body)}/32"
+  admin-client-cidrs = concat( local.allowed-admin-client, [ local.gcp-cidr, local.my-ip ])
+  web-client-cidrs = concat( local.allowed-web-client ,local.admin-client-cidrs )
+  demo-node-config = { for region, name in local.gcp-regions: region => <<EOT
+export APP_NAME="${local.app-name}"
+export APP_MACHINE_NAME="${local.app-machine-name}"
+export REGION_NAME="${name}"
+export REGION="${region}"
+export ZONE="${local.gcp-zones[region]}"
+export ZONE_PREFERENCE="${local.zone-preference}"
+export OPENAI_API_KEY="${local.openai_api_key}"
+export DB_URL="jdbc:yugabytedb://${local.node-private-ips-by-region[region]}:5433/yugabyte"
+export DB_USER="yugabyte"
+export DB_PASSWORD="yugabyte"
+export DB_DRIVER_CLASS_NAME="com.yugabyte.Driver"
+export BACKEND_API_KEY="superbowl-2024"
+export PORT="8080"
+export NODE_IP="${google_compute_address.private-ip[region].address}"
+export YB_MASTERS="${join(",", formatlist("%s:7100",local.node-private-ips))}"
+export YB_NODES=( ${join(" ",local.node-private-ips)} )
+export YB_FIRST_NODE="${local.node-private-ips[0]}"
+export YB_IS_PRIMARY="${google_compute_address.private-ip[region].address == local.node-private-ips[0]?"TRUE":"FALSE"}"
+export YB_LOCATION="gcp.${region}.${local.gcp-zones[region]}"
+export YB_VERSION="${local.yb-version}"
+export YB_RELEASE="${local.yb-release}"
+export YB_ARCH="${local.yb-arch}"
+export GITHUB_REPO="${local.github-repo}"
+export GIT_BRANCH="${local.git-branch}"
+export REACT_APP_RUNTIME_ENVIRONMENT="docker"
+export SPRING_FLYWAY_ENABLED="${local.node-private-ips[0] ==  google_compute_address.private-ip[region].address ? "true" : "false"}"
+EOT
+  }
 }
+
+
 provider "google" {
   project        = local.gcp-project
   default_labels = local.labels
@@ -118,7 +133,7 @@ resource "google_compute_firewall" "public" {
     ports    = ["80", "443", "8080", "8443", "3000", "5000", "7000", "9000", "15433"]
     protocol = "tcp"
   }
-  source_ranges = ["0.0.0.0/0"]
+  source_ranges = local.web-client-cidrs
   target_tags   = ["demo-machine"]
 }
 
@@ -139,7 +154,7 @@ resource "google_compute_firewall" "private" {
   allow {
     protocol = "all"
   }
-  source_ranges = [local.gcp-cidr, "${chomp(data.http.my-ip.response_body)}/32"]
+  source_ranges = local.admin-client-cidrs
   target_tags   = ["demo-machine"]
 }
 
@@ -192,8 +207,7 @@ data "cloudinit_config" "conf" {
       region-name    = each.value
       ssh-key     = tls_private_key.private_key.private_key_openssh
       ssh-key-pub = tls_private_key.private_key.public_key_openssh
-      demo-script = file("./templates/demo.sh")
-      node-config = local.demo-node-config[each.key]
+      demo-env = local.demo-node-config[each.key]
       github-repo = local.github-repo
       git-branch  = local.git-branch
     })
