@@ -2,11 +2,12 @@
 set -Eeuo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PROJECT_DIR=$(cd $SCRIPT_DIR/..; pwd)
+SCRIPT_NAME=$(basename $0)
+SCRIPT_ENV=$SCRIPT_DIR/$SCRIPT_NAME.env
 SCRIPT=$0
-
 YB_HOME=$HOME/yugabyte
 
-[[ -f $SCRIPT_DIR/demo-env ]] && source $SCRIPT.env
+[[ -f $SCRIPT_ENV ]] && source $SCRIPT_ENV
 
 APP_ROOT_DIR=$HOME/sample_apps/${APP_MACHINE_NAME}
 
