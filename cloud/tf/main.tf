@@ -255,10 +255,10 @@ data "google_compute_zones" "az" {
 
 resource "google_compute_instance" "vm" {
   for_each = local.gcp-regions
-  name         = "${local.prefix}-${each.key}"
+  name         = local.nodes[each.key].name
   machine_type = local.gcp-machine-type
-  zone         = data.google_compute_zones.az[each.key].names[0]
-  hostname = "${each.key}.${local.project-domain}"
+  zone         = local.nodes[each.key].zone
+  hostname = local.nodes[each.key].hostname
 
   boot_disk {
     initialize_params {
@@ -273,9 +273,9 @@ resource "google_compute_instance" "vm" {
   network_interface {
     network = google_compute_network.vpc.name
     access_config {
-      nat_ip = google_compute_address.public-ip[each.key].address
+      nat_ip = local.nodes[each.key].public.ip
     }
-    network_ip = google_compute_address.private-ip[each.key].address
+    network_ip = local.nodes[each.key].private.ip
     subnetwork = google_compute_subnetwork.subnet[each.key].id
   }
   metadata = {
@@ -288,28 +288,50 @@ resource "google_compute_instance" "vm" {
 }
 
 
+locals {
+   nodes = {
+    for index, region in keys(local.gcp-regions):
+      region => {
+        name = "${local.prefix}-${region}"
+        preference = index + 1
+        zone = data.google_compute_zones.az[region].names[0]
+        hostname = trimsuffix(google_dns_record_set.public-fqdn[region].name,".")
+        private = {
+          ip = google_compute_address.private-ip[region].address
+          fqdn = trimsuffix(google_dns_record_set.private-fqdn[region].name, ".")
+        }
+        public = {
+          ip = google_compute_address.public-ip[region].address
+          fqdn = trimsuffix(google_dns_record_set.public-fqdn[region].name,".")
+        }
+      }
+  }
+}
+
 output "vms" {
   value = <<VMS
-%{ for region, name in local.gcp-regions ~}
-==> Region: ${region}(${name}) <==============
+%{ for region, config in local.nodes ~}
+==> Region: ${region}(${local.gcp-regions[region]}) <==============
       VM: ${google_compute_instance.vm[region].name}
- Private: ${google_compute_address.private-ip[region].address}
-          ${google_dns_record_set.private-fqdn[region].name}
-  Public: ${google_compute_address.public-ip[region].address}
-          ${google_dns_record_set.public-fqdn[region].name}
-  YB Web: http://${google_compute_address.public-ip[region].address}:15433/
-          http://${google_dns_record_set.public-fqdn[region].name}:15433/
-  Master: http://${google_compute_address.public-ip[region].address}:7000/
-          http://${google_dns_record_set.public-fqdn[region].name}:7000/
- Tserver: http://${google_compute_address.public-ip[region].address}:9000/
-          http://${google_dns_record_set.public-fqdn[region].name}:9000/
- App API: http://${google_compute_address.public-ip[region].address}:8080/
-          http://${google_dns_record_set.public-fqdn[region].name}:8080
-  App UI: http://${google_compute_address.public-ip[region].address}:3000/
-          http://${google_dns_record_set.public-fqdn[region].name}:3000
-     SSH: ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${google_compute_address.public-ip[region].address}
-          ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${google_dns_record_set.public-fqdn[region].name}
-          gcloud compute ssh --zone ${google_compute_instance.vm[region].zone} ${google_compute_instance.vm[region].name}
+ Private: ${config.private.ip}
+          ${config.private.fqdn}
+  Public: ${config.public.ip}
+          ${config.public.fqdn}
+  YB Web: http://${config.public.ip}:15433/
+          http://${config.public.fqdn}:15433/
+  Master: http://${config.public.ip}:7000/
+          http://${config.public.fqdn}:7000/
+ Tserver: http://${config.public.ip}:9000/
+          http://${config.public.fqdn}:9000/
+ App API: http://${config.public.ip}:8080/
+          http://${config.public.fqdn}:8080
+  App UI: http://${config.public.ip}:3000/
+          http://${config.public.fqdn}:3000
+     SSH: ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.public.ip}
+          ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.public.fqdn}
+          gcloud compute ssh --zone ${config.zone} ${google_compute_instance.vm[region].name}
+ Pvt SSH: ssh -i ~/.ssh/id_rsa  -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.private.ip}
+          ssh -i ~/.ssh/id_rsa  -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.private.fqdn}
 %{ endfor ~}
 VMS
 }
