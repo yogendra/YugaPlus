@@ -46,14 +46,12 @@ write_files:
     ${indent(4,ssh-key-pub)}
   owner: yugabyte:yugabyte
   defer: true
-- path: /home/yugabyte/bin/demo-env
+- path: /home/yugabyte/bin/demo.env
   owner: yugabyte:yugabyte
   permission: "0600"
   defer: true
   content: |
-    %{ for k,v in node-config ~}
-    export ${k}=${v}
-    %{ endfor ~}
+    ${indent(4, demo-env)}
 
 runcmd:
 - su - yugabyte -c 'mkdir -p ~/.config/tmux ; curl -sSL https://raw.githubusercontent.com/yogendra/dotfiles/master/.tmux.conf-latest -o /home/yugabyte/.config/tmux/tmux.conf; ln -s /home/yugabyte/.config/tmux/tmux.conf /home/yugabyte/.tmux.conf'
