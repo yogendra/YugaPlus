@@ -1,0 +1,8 @@
+# version: "3.8"
+
+include:
+  - path:
+    - app.docker-compose.yaml
+  - path:
+    - pg.docker-compose.yaml
+

@@ -1,0 +1,9 @@
+# version: "3.8"
+
+include:
+  - path:
+    - app.docker-compose.yaml
+    env_file: .env.yb
+  - path:
+    - yb.docker-compose.yaml
+    env_file: .env.yb

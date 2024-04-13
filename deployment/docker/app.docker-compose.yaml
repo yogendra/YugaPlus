@@ -1,0 +1,55 @@
+# version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ${PROJECT_ROOT:../..}/backend
+    image: backend:latest
+    hostname: backend
+    environment:
+      BACKEND_API_KEY: ${BACKEND_API_KEY:-superbowl-2024}
+      DB_CONN_INIT_SQL: ${DB_CONN_INIT_SQL:-}
+      DB_DRIVER_CLASS_NAME: ${DB_CLASS_NAME:-org.postgresql.Driver}
+      DB_USER: ${DB_USER:-demo}
+      DB_PASSWORD: ${DB_PASSWORD:-demo}
+      DB_URL: ${DB_URL:-jdbc:postgresql://${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-demo}}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OpenAI api key is required}
+      PORT: ${PORT:-8080}
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-true}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      db-client:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ${PROJECT_ROOT-../..}/frontend
+    image: frontend:latest
+    hostname: frontend
+    environment:
+      REACT_APP_RUNTIME_ENVIRONMENT: docker
+      REACT_APP_PROXY_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+    - backend
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+    # env_file:
+    # - path: ./default.env
+    #   required: true # default
+    # - path: ./override.env
+    #   required: false

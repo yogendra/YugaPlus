@@ -1,0 +1,90 @@
+# version: "3.8"
+services:
+  db:
+    image: yugabytedb/yugabyte:2.20.3.0-b68
+    command:
+      - bash
+      - -c
+      - |
+        rm -rf /tmp/.yb* ;
+        yugabyted start --background=false --base_dir=/yb_base
+    hostname: db
+    environment:
+      PGUSER: ${DB_USER:-demo}
+      PGPASSWORD: ${DB_PASSWORD:-demo}
+      PGDATABASE: ${DB_NAME:-demo}
+      YSQL_PASSWORD: ${DB_PASSWORD:-demo}
+      YSQL_USER: ${DB_USER:-demo}
+      YSQL_DB: ${DB_NAME:-demo}
+      YCQL_PASSWORD: ${DB_PASSWORD:-demo}
+      YCQL_KEYSPACE: ${DB_NAME:-demo}
+      YCQL_USER: ${DB_USER:-demo}
+    ports:
+      - "5433:5433"
+      - "15433:15433"
+      - "7000:7000"
+      - "9000:9000"
+    volumes:
+      - ybdata:/yb_base
+    healthcheck:
+      test: ["CMD-SHELL", "/home/yugabyte/postgres/bin/pg_isready --host ${DB_HOST:-db} --username ${DB_USER:-demo} --dbname ${DB_NAME:-demo}"]
+      start_period: 1m
+      start_interval: 5s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+  db-init:
+    image: yugabytedb/yugabyte:2.20.3.0-b68
+    environment:
+      PGUSER: ${DB_USER:-demo}
+      PGPASSWORD: ${DB_PASSWORD:-demo}
+      PGDATABASE: ${DB_NAME:-demo}
+    command:
+    - bash
+    - -c
+    - |
+      ysqlsh -h ${DB_HOST:-db} -U ${DB_USER:-demo} -c "ALTER ROLE ${DB_USER:-demo} SET yb_silence_advisory_locks_not_supported_error=on;"
+    depends_on:
+      db:
+        condition: service_healthy
+  db-client:
+    image: yugabytedb/yugabyte:2.20.3.0-b68
+    hostname: db-client
+    command: tail -f /dev/null
+    environment:
+      PGUSER: ${DB_USER:-demo}
+      PGPASSWORD: ${DB_PASSWORD:-demo}
+      PGDATABASE: ${DB_NAME:-demo}
+      PGHOST: ${DB_HOST:-db}
+      PGPORT: ${DB_PORT:-5433}
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+  sqlpad:
+    image: sqlpad/sqlpad:7
+    platform: linux/amd64
+    hostname: sqlpad
+    ports:
+      - "3001:3001"
+    environment:
+      SQLPAD_PORT: 3001
+      SQLPAD_CONNECTIONS__demo__name: demo
+      SQLPAD_CONNECTIONS__demo__driver: postgres
+      SQLPAD_CONNECTIONS__demo__host: ${DB_HOST:-db}
+      SQLPAD_CONNECTIONS__demo__port: ${DB_PORT:-5433}
+      SQLPAD_CONNECTIONS__demo__username: ${DB_USER:-demo}
+      SQLPAD_CONNECTIONS__demo__password: ${DB_PASSWORD:-demo}
+      SQLPAD_CONNECTIONS__demo__multiStatementTransactionEnabled: "true"
+      SQLPAD_CONNECTIONS__demo__idleTimeoutSeconds: 86400
+      SQLPAD_AUTH_DISABLED_DEFAULT_ROLE: admin
+      SQLPAD_AUTH_DISABLED: true
+      SQLPAD_APP_LOG_LEVEL: info
+      SQLPAD_WEB_LOG_LEVEL: warn
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  ybdata:

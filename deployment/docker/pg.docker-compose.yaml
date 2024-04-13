@@ -1,0 +1,50 @@
+# version: "3.8"
+include:
+  - path:
+    - app.docker-compose.yaml
+
+services:
+  db:
+    # image: postgres:14-alpine
+    # image: ankane/pgvector:v0.2.7
+    image: ankane/pgvector
+    hostname: db
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-demo}
+      POSTGRES_USER: ${DB_USER:-demo}
+      POSTGRES_DB: ${DB_NAME:-demo}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "--username", "${DB_USER:-demo}", "--dbname", "${DB_NAME:-demo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  db-client:
+    image: postgres:14-alpine
+    command: tail -f /dev/null
+  sqlpad:
+    image: sqlpad/sqlpad:7
+    platform: linux/amd64
+    hostname: "sqlpad"
+    container_name: sqlpad
+    ports:
+      - "3001:3001"
+    environment:
+      SQLPAD_PORT: 3001
+      SQLPAD_CONNECTIONS__demo__name: demo
+      SQLPAD_CONNECTIONS__demo__driver: postgres
+      SQLPAD_CONNECTIONS__demo__host: ${DB_HOST:-db}
+      SQLPAD_CONNECTIONS__demo__port: ${DB_PORT:-5433}
+      SQLPAD_CONNECTIONS__demo__username: ${DB_USER:-demo}
+      SQLPAD_CONNECTIONS__demo__password: ${DB_PASSWORD:-demo}
+      SQLPAD_CONNECTIONS__demo__multiStatementTransactionEnabled: 'true'
+      SQLPAD_CONNECTIONS__demo__idleTimeoutSeconds: 86400
+      SQLPAD_AUTH_DISABLED_DEFAULT_ROLE: admin
+      SQLPAD_AUTH_DISABLED: true
+      SQLPAD_APP_LOG_LEVEL: info
+      SQLPAD_WEB_LOG_LEVEL: warn
+volumes:
+  pgdata:
