@@ -15,35 +15,39 @@ function _help(){
 $APP_NAME
 $SCRIPT <COMMANDS> [parameters...]
 
-COMAMNDS
-  boot
-      initial setup - Start db and app
-  shell-setup
-      Setup Bash shell
-  db-install
-      Install database binaries
-  db-start
-      Starts database
-  db-stop
-      Starts database
-  db-configure
-      configures database
-  db-prepare-geopart
-      prepare geo partitioning for database
+CONFIG COMMANDS
+
   app-setup
       download and build application
   app-start
       start application
   app-stop
       stop application
-  run-on
+  boot
+      initial setup - Start db and app
+  shell-setup
+      Setup Bash shell
+  db-configure
+      configures database
+  db-install
+      Install database binaries
+  db-prepare-geopart
+      prepare geo partitioning for database
+  db-start
+      Starts database
+  db-stop
+      Starts database
+  run-on <node-ip>
       run command on a remote node
   run-on-all
       run command on all nodes
-  shell
-      create a demo shell
   self-update
       run self update
+  shell
+      create a demo shell
+
+DEMO COMMANDS
+
   search
       run search demo
   update
