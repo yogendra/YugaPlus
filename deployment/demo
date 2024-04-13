@@ -57,7 +57,7 @@ EOF
 }
 
 function self-update(){
-  curl -sSL https://raw.githubusercontent.com/$GITHUB_REPO/$GIT_BRANCH/cloud/tf/templates/demo.sh -o $SCRIPT.new
+  curl -sSL https://raw.githubusercontent.com/$GITHUB_REPO/$GIT_BRANCH/deployment/demo -o $SCRIPT.new
   chmod 700 $SCRIPT.new
   mv $SCRIPT.new $SCRIPT
 }
