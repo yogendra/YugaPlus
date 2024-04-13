@@ -72,13 +72,14 @@ function shell-setup(){
 function shell(){
   tmux kill-session -t demo &>> /dev/null || echo "No running shell"
 
-  tmux new-session -d -s demo -n shell
-
-  tmux new-window -a -t demo:shell -n db  "$HOME/yugabyte/bin/ysqlsh -h $NODE_IP"
-
-  tmux new-window -a -t demo:db -n admin "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
+  tmux new-session -d -s demo -n admin "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
   tmux split-window -t demo:admin -p 66  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[1]}"
   tmux split-window -t demo:admin -p 50  "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[2]}"
+  tmux synchronize-panes -t demo:admin
+
+  tmux new-window -a -t demo:admin -n local  "$HOME/yugabyte/bin/ysqlsh -h $NODE_IP"
+
+  tmux new-window -a -t demo:local -n db "ssh -i $HOME/.ssh/id_rsa -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${YB_NODES[0]}"
 
   tmux select-window -t demo:shell
   tmux attach-session -t demo
