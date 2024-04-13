@@ -250,13 +250,14 @@ function boot(){
   db-install
 
   echo DB Start
-  db-install
+  db-start
+
+  echo App setup
+  app-setup
 
   echo DB Configure
   db-configure
 
-  echo App setup
-  app-setup
 }
 
 OP=${1:-_help}
