@@ -42,7 +42,7 @@ locals {
   skip_dns = local.gcp-dns-zone == null || local.gcp-dns-zone == ""
 
   gcp-zones              = { for region, _ in local.gcp-regions : region => data.google_compute_zones.az[region].names[0] }
-  zone-preference        = "'${join(" ", [for index, region in keys(local.gcp-regions) : "gcp.${region}.${local.gcp-zones[region]}:${index + 1}"])}'"
+  zone-preference        = join(" ", [for index, region in keys(local.gcp-regions) : "gcp.${region}.${local.gcp-zones[region]}:${index + 1}"])
   gcp-region-subnet-cidr = { for index, region in keys(local.gcp-regions) : region => cidrsubnet(local.gcp-cidr, 4, index) }
 
   ssh-public-key = tls_private_key.private_key.public_key_openssh
@@ -183,13 +183,13 @@ resource "tls_private_key" "private_key" {
 resource "local_sensitive_file" "ssh-private-key" {
   content         = tls_private_key.private_key.private_key_openssh
   file_permission = "0600"
-  filename        = "${path.module}/private/sshkey"
+  filename        = "${path.root}/private/sshkey"
 }
 
 resource "local_sensitive_file" "ssh-public-key" {
   content         = tls_private_key.private_key.public_key_openssh
   file_permission = "0600"
-  filename        = "${path.module}/private/sshkey.pub"
+  filename        = "${path.root}/private/sshkey.pub"
 }
 
 data "cloudinit_config" "conf" {
