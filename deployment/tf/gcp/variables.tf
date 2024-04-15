@@ -34,14 +34,17 @@ variable "expiry" {
 variable "github-repo" {
   type        = string
   description = "Github repository <username>/<repos> format. Used for sourcing script and code"
+  default = "YugabyteDB-Samples/YugaPlus"
 }
 variable "git-branch" {
   type        = string
   description = "Git branch within the repository to deploy"
+  default = "superbowl-demo"
 }
 variable "demo-script-url" {
   type = string
   description = "Demo script URL to download and put under /home/yugabyte/bin/demo in the nodes"
+  default = "https://raw.githubusercontent.com/YugabyteDB-Sample/YugaPlus/main/deployment/demo"
 }
 variable "demo-script-boot-command" {
   type = string
