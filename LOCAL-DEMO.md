@@ -167,4 +167,73 @@ sequenceDiagram
     ```
 
 
+## Search Code
+
+
+```java
+
+var params = new HashMap<String, Object>();
+var query = "";
+var categoryFilterExpression = StringUtils.isBlank(category)? "": String.format("{ \"name\": \"%1$s}\" }", category);
+
+if (enableAiSearch){
+  // In case OpenAI config is setup
+  var promptEmbedding = aiClient.embed(prompt);
+  var prompt_vector = promptEmbedding.toString();
+
+  query = """
+    SELECT
+      id, title, overview, vote_average, release_date
+    FROM
+      movie
+    WHERE
+      rank >= :rank
+      AND
+      generes @> :category::jsonb
+      AND
+      1 - (overview_vector <=> :prompt_vector::vector) >= :similarity_threshold
+    ORDER BY
+      overview_vector <=> :prompt_vector::vector
+    LIMIT
+      :max_results";
+  """;
+  params.put("rank", rank);
+  params.put("prompt_vector", prompt_vector);
+  params.put("category", categoryFilterExpression);
+  params.put("similarity_threshold", SIMILARITY_THRESHOLD);
+  params.put("max_results", MAX_RESULTS);
+
+}else{
+  // DB based full text search
+  query = """
+    SELECT
+      id, title, overview, vote_average, release_date
+    FROM
+      movie
+    WHERE
+      rank >= :rank
+      AND
+      generes @> :category::jsonb
+      AND
+      overview LIKE :prompt
+    ORDER BY
+      title ASC
+    LIMIT
+      :max_results";
+      """;
+  params.put("rank", rank);
+  params.put("prompt", prompt);
+  params.put("category", categoryFilterExpression);
+  params.put("similarity_threshold", SIMILARITY_THRESHOLD);
+  params.put("max_results", MAX_RESULTS);
+}
+var movies = jdbcClient.sql(query.toString())
+        .params(params)
+        .query(Movie.class).list();
+var status = new Status(true, HttpServletResponse.SC_OK, formatDatabaseLatency(execTime));
+var response =  new MovieResponse(status, movies);
+return response;
+
+```
+
 [web-ui]: http://localhost:3000
