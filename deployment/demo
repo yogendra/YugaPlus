@@ -66,6 +66,7 @@ function self-update(){
 function shell-setup(){
   echo export REGION_NAME=$REGION_NAME >> $HOME/.bashrc
   echo export YB_HOME=$YB_HOME >> $HOME/.bashrc
+  echo "[[ $SCRIPT_ENV ]] && source $SCRIPT_ENV" >> $HOME/.bashrc
   echo 'export PATH=$YB_HOME/bin:$YB_HOME/postgres/bin:$YB_HOME/tools:$PATH' >> $HOME/.bashrc
   echo 'export PS1='"'"'\[\e[38;5;202;48;5;55m\] \[\e[1m\]${REGION_NAME}\[\e[22m\] \[\e[38;5;55;48;5;202m\] \w \[\e[0m\] \$ '"'"'' >> $HOME/.bashrc
   echo 'printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n $REGION_NAME | base64)' >> $HOME/.bashrc
@@ -207,15 +208,15 @@ function app-stop(){
 }
 
 function search(){
-  set -v
-  http GET :8080/api/movie/search \
+  set -x
+  http -b GET :8080/api/movie/search \
     prompt=='A long time ago in a galaxy far, far away...' \
     rank==7 \
     X-Api-Key:$BACKEND_API_KEY
 }
 function update(){
   appuser=$1;shift
-  set -v
+  set -x
 
   http -b DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
