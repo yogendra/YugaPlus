@@ -158,10 +158,10 @@ function db-configure(){
   fi
 }
 function db-shell(){
-  $YB_HOME/bin/ysqlsh -h $(hostname -I)
+  $YB_HOME/bin/ysqlsh -h $NODE_IP "$@"
 }
 function db-prepare-geopart(){
-  $YB_HOME/bin/ysqlsh -h $(hostname -I) -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
+  $YB_HOME/bin/ysqlsh -h $NODE_IP -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql "$@"
 }
 # Clone and build app
 function app-setup(){
@@ -217,13 +217,13 @@ function update(){
   appuser=$1;shift
   set -v
 
-  http DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
-  http DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
-  http DELETE :8080/api/library/remove/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b DELETE :8080/api/library/remove/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
 
-  http PUT :8080/api/library/add/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
-  http PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
-  http PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b PUT :8080/api/library/add/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  http -b PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
 }
 function run-on(){
   node=$1; shift
