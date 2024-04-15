@@ -60,13 +60,13 @@ docker run -d --name yugabytedb-node1 --net yugaplus-network \
   -v ~/yugabyte-volume/node1:/home/yugabyte/yb_data --restart unless-stopped \
   yugabytedb/yugabyte:latest \
   bin/yugabyted start --base_dir=/home/yugabyte/yb_data --daemon=false
-  
+
 docker run -d --name yugabytedb-node2 --net yugaplus-network \
   -p 15434:15433 -p 7002:7000 -p 9002:9000 -p 5434:5433 \
   -v ~/yugabyte-volume/node2:/home/yugabyte/yb_data --restart unless-stopped \
   yugabytedb/yugabyte:latest \
   bin/yugabyted start --join=yugabytedb-node1 --base_dir=/home/yugabyte/yb_data --daemon=false
-      
+
 docker run -d --name yugabytedb-node3 --net yugaplus-network \
   -p 15435:15433 -p 7003:7000 -p 9003:9000 -p 5435:5433 \
   -v ~/yugabyte-volume/node3:/home/yugabyte/yb_data --restart unless-stopped \
@@ -86,7 +86,7 @@ Start the backend in Docker:
 
     ```shell
     cd backend
-    docker build -t yugaplus-backend .  
+    docker build -t yugaplus-backend .
     ```
 
 2. Start a backend container:
@@ -106,7 +106,7 @@ Start the frontend in Docker:
 
     ```shell
     cd frontend
-    docker build -t yugaplus-frontend .  
+    docker build -t yugaplus-frontend .
     ```
 
 2. Start a frontend container:
@@ -161,3 +161,8 @@ Sign in using the following credentials:
 Try a few prompts:
 *A movie about a space adventure.*
 *A kids-friendly movie with unexpected ending.*
+
+
+## Cloud Deployment
+
+* GCP - Refer to [deployment/tf/gcp/README.md](deployment/tf/gcp/README.md)
