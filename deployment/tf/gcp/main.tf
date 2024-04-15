@@ -176,15 +176,32 @@ resource "tls_private_key" "private_key" {
 resource "local_sensitive_file" "ssh-private-key" {
   content         = tls_private_key.private_key.private_key_openssh
   file_permission = "0600"
-  filename        = "${path.root}/private/sshkey"
+  filename        = "${abspath(path.root)}/private/sshkey"
 }
 
 resource "local_sensitive_file" "ssh-public-key" {
   content         = tls_private_key.private_key.public_key_openssh
   file_permission = "0600"
-  filename        = "${path.root}/private/sshkey.pub"
+  filename        = "${abspath(path.root)}/private/sshkey.pub"
 }
+resource "local_sensitive_file" "ssh-config" {
+  content         = <<SSH_CONFIG
+Host *
+  IdentityFile ${local_sensitive_file.ssh-private-key.filename}
+  User yugabyte
+  UserKnownHostsFile /deb/null
+  StrictHostKeyChecking no
 
+%{~ for region, config in local.nodes ~}
+
+Host ${region}, ${config.region-name}
+  Hostname ${config.public.ip}
+
+%{~ endfor ~}
+SSH_CONFIG
+  file_permission = "0600"
+  filename        = "${abspath(path.root)}/private/ssh_config"
+}
 data "cloudinit_config" "conf" {
   for_each = local.gcp-regions
 
@@ -288,6 +305,7 @@ locals {
     for index, region in keys(local.gcp-regions) :
     region => {
       name       = "${local.prefix}-${region}"
+      region-name = local.gcp-regions[region]
       preference = index + 1
       zone       = data.google_compute_zones.az[region].names[0]
       hostname   = local.skip_dns ? "${region}.local"  : trimsuffix(google_dns_record_set.public-fqdn[region].name, ".")
@@ -338,9 +356,11 @@ output "vms" {
           %{~ if !local.skip_dns ~}
           http://${config.public.fqdn}:3000
           %{~ endif ~}
-     SSH: ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.public.ip}
+     SSH: ssh -F ${local_sensitive_file.ssh-config.filename} ${config.region-name}
+          ssh -F ${local_sensitive_file.ssh-config.filename} ${region}
+          ssh -F ${local_sensitive_file.ssh-config.filename} ${config.public.ip}
           %{~ if !local.skip_dns ~}
-          ssh -i ${local_sensitive_file.ssh-private-key.filename} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.public.fqdn}
+          ssh -F ${local_sensitive_file.ssh-config.filename} ${config.public.fqdn}
           %{~ endif ~}
           gcloud compute ssh --zone ${config.zone} ${google_compute_instance.vm[region].name}
  Pvt SSH: ssh -i ~/.ssh/id_rsa  -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" yugabyte@${config.private.ip}
