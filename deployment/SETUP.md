@@ -434,6 +434,60 @@ Go ahead and pick another patter for global applications that boost the write pe
 
 1. Connect to the cluster with DataGrip or another SQL tool.
 
-2. Apply the contents of the `/home/dmagda/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library.sql`
+2. Apply the contents of the `$HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library.sql`
+
+
+      ```bash
+      ysqlsh -h $NODE_IP
+      ```
 
 3. Show that the write latency right now is in the single-digit millisecond range by removing/adding movies to the user libraries.
+
+
+
+
+## APJ Demo
+
+
+### Tokyo
+
+```
+http -b DELETE :8080/api/library/remove/1891 user==arisa@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/1895 user==arisa@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/11 user==arisa@gmail.com X-Api-Key:superbowl-2024
+
+http -b PUT :8080/api/library/add/11 user==arisa@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1891 user==arisa@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1895 user==arisa@gmail.com X-Api-Key:superbowl-2024
+
+```
+
+### Singapore
+
+
+```
+http -b DELETE :8080/api/library/remove/1891 user==yogi@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/1895 user==yogi@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/11 user==yogi@gmail.com X-Api-Key:superbowl-2024
+
+http -b PUT :8080/api/library/add/11 user==yogi@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1891 user==yogi@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1895 user==yogi@gmail.com X-Api-Key:superbowl-2024
+
+```
+
+
+### Mumbai
+
+
+```
+http -b DELETE :8080/api/library/remove/1891 user==srini@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/1895 user==srini@gmail.com X-Api-Key:superbowl-2024
+http -b DELETE :8080/api/library/remove/11 user==srini@gmail.com X-Api-Key:superbowl-2024
+
+http -b PUT :8080/api/library/add/11 user==srini@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1891 user==srini@gmail.com X-Api-Key:superbowl-2024
+http -b PUT :8080/api/library/add/1895 user==srini@gmail.com X-Api-Key:superbowl-2024
+
+```
+
