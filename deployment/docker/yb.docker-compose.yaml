@@ -10,15 +10,16 @@ services:
         yugabyted start --background=false --base_dir=/yb_base
     hostname: db
     environment:
-      PGUSER: ${DB_USER:-demo}
-      PGPASSWORD: ${DB_PASSWORD:-demo}
-      PGDATABASE: ${DB_NAME:-demo}
-      YSQL_PASSWORD: ${DB_PASSWORD:-demo}
-      YSQL_USER: ${DB_USER:-demo}
-      YSQL_DB: ${DB_NAME:-demo}
-      YCQL_PASSWORD: ${DB_PASSWORD:-demo}
-      YCQL_KEYSPACE: ${DB_NAME:-demo}
-      YCQL_USER: ${DB_USER:-demo}
+      PGUSER: ${DB_USER:-yugabyte}
+      PGPASSWORD: ${DB_PASSWORD:-yugabyte}
+      PGDATABASE: ${DB_NAME:-yugabyte}
+      PGHOST: ${DB_HOST:-db}
+      YSQL_PASSWORD: ${DB_PASSWORD:-yugabyte}
+      YSQL_USER: ${DB_USER:-yugabyte}
+      YSQL_DB: ${DB_NAME:-yugabyte}
+      YCQL_PASSWORD: ${DB_PASSWORD:-yugabyte}
+      YCQL_KEYSPACE: ${DB_NAME:-yugabyte}
+      YCQL_USER: ${DB_USER:-yugabyte}
     ports:
       - "5433:5433"
       - "15433:15433"
@@ -27,7 +28,7 @@ services:
     volumes:
       - ybdata:/yb_base
     healthcheck:
-      test: ["CMD-SHELL", "/home/yugabyte/postgres/bin/pg_isready --host ${DB_HOST:-db} --username ${DB_USER:-demo} --dbname ${DB_NAME:-demo}"]
+      test: ["CMD-SHELL", "/home/yugabyte/postgres/bin/pg_isready"]
       start_period: 1m
       start_interval: 5s
       interval: 10s
@@ -36,14 +37,16 @@ services:
   db-init:
     image: yugabytedb/yugabyte:2.20.3.0-b68
     environment:
-      PGUSER: ${DB_USER:-demo}
-      PGPASSWORD: ${DB_PASSWORD:-demo}
-      PGDATABASE: ${DB_NAME:-demo}
+      PGUSER: ${DB_USER:-yugabyte}
+      PGPASSWORD: ${DB_PASSWORD:-yugabyte}
+      PGDATABASE: ${DB_NAME:-yugabyte}
+      PGHOST: ${DB_HOST:-db}
+      PGPORT: ${DB_PORT:-5433}
     command:
     - bash
     - -c
     - |
-      ysqlsh -h ${DB_HOST:-db} -U ${DB_USER:-demo} -c "ALTER ROLE ${DB_USER:-demo} SET yb_silence_advisory_locks_not_supported_error=on;"
+      ysqlsh -c "ALTER ROLE ${DB_USER:-yugabyte} SET yb_silence_advisory_locks_not_supported_error=on;"
     depends_on:
       db:
         condition: service_healthy
@@ -52,11 +55,13 @@ services:
     hostname: db-client
     command: tail -f /dev/null
     environment:
-      PGUSER: ${DB_USER:-demo}
-      PGPASSWORD: ${DB_PASSWORD:-demo}
-      PGDATABASE: ${DB_NAME:-demo}
+      PGUSER: ${DB_USER:-yugabyte}
+      PGPASSWORD: ${DB_PASSWORD:-yugabyte}
+      PGDATABASE: ${DB_NAME:-yugabyte}
       PGHOST: ${DB_HOST:-db}
       PGPORT: ${DB_PORT:-5433}
+    volumes:
+    - ${PROJECT_ROOT}:/project
     depends_on:
       db:
         condition: service_healthy
@@ -74,8 +79,8 @@ services:
       SQLPAD_CONNECTIONS__demo__driver: postgres
       SQLPAD_CONNECTIONS__demo__host: ${DB_HOST:-db}
       SQLPAD_CONNECTIONS__demo__port: ${DB_PORT:-5433}
-      SQLPAD_CONNECTIONS__demo__username: ${DB_USER:-demo}
-      SQLPAD_CONNECTIONS__demo__password: ${DB_PASSWORD:-demo}
+      SQLPAD_CONNECTIONS__demo__username: ${DB_USER:-yugabyte}
+      SQLPAD_CONNECTIONS__demo__password: ${DB_PASSWORD:-yugabyte}
       SQLPAD_CONNECTIONS__demo__multiStatementTransactionEnabled: "true"
       SQLPAD_CONNECTIONS__demo__idleTimeoutSeconds: 86400
       SQLPAD_AUTH_DISABLED_DEFAULT_ROLE: admin

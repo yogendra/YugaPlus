@@ -27,6 +27,8 @@ services:
       PGDATABASE: ${DB_NAME:-postgres}
       PGHOST: ${DB_HOST:-db}
       PGPORT: ${DB_PORT:-5432}
+  volumes:
+    - ${PROJECT_ROOT}:/project
   sqlpad:
     image: sqlpad/sqlpad:7
     platform: linux/amd64

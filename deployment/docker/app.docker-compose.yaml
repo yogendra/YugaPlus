@@ -3,7 +3,7 @@
 services:
   backend:
     build:
-      context: ${PROJECT_ROOT:../..}/backend
+      context: ${PROJECT_ROOT:-../..}/backend
     image: backend:latest
     hostname: backend
     environment:
@@ -31,7 +31,7 @@ services:
 
   frontend:
     build:
-      context: ${PROJECT_ROOT-../..}/frontend
+      context: ${PROJECT_ROOT:-../..}/frontend
     image: frontend:latest
     hostname: frontend
     environment:
