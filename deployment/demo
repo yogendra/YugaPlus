@@ -37,7 +37,7 @@ CONFIG COMMANDS
   db-start
       Starts database
   db-stop
-      Starts database
+      Stops database
   run-on <node-ip>
       run command on a remote node
   run-on-all
@@ -46,6 +46,8 @@ CONFIG COMMANDS
       run self update
   shell
       create a demo shell
+  stop
+      stop / pause demo
 
 DEMO COMMANDS
 
@@ -131,8 +133,7 @@ function db-start(){
 }
 function db-stop(){
     $YB_HOME/bin/yugabyted \
-      stop \
-      --advertise_address=$NODE_IP
+      stop
 }
 function db-configure(){
   if [[ $YB_FIRST_NODE ==  $NODE_IP  ]]
@@ -241,7 +242,10 @@ function run-on-all(){
     run-on $node "$@"
   done
 }
-
+function stop(){
+  app-stop
+  db-stop
+}
 function boot(){
   echo Shell Setup
   shell-setup
