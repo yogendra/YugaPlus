@@ -102,13 +102,6 @@ provider "google" {
   default_labels = local.labels
 }
 
-
-resource "google_service_account" "sa" {
-  account_id   = "${local.prefix}-vm-sa"
-  display_name = "${local.prefix} Custom SA for VM Instance"
-}
-
-
 resource "google_compute_network" "vpc" {
   name                    = local.gcp-network
   auto_create_subnetworks = false
