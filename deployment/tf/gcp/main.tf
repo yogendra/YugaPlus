@@ -189,7 +189,7 @@ resource "local_sensitive_file" "ssh-config" {
 Host *
   IdentityFile ${local_sensitive_file.ssh-private-key.filename}
   User yugabyte
-  UserKnownHostsFile /deb/null
+  UserKnownHostsFile /dev/null
   StrictHostKeyChecking no
 
 %{~ for region, config in local.nodes ~}
