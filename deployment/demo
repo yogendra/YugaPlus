@@ -8,7 +8,7 @@ SCRIPT=$0
 YB_HOME=$HOME/yugabyte
 DB_SHELL_CMD=${DB_SHELL_CMD:-db-shell}
 LOCAL_DB_COMPOSE=${LOCAL_DB_COMPOSE:-$PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml}
-
+DB_GEOPART_SCRIPT="V2__create_geo_partitioned_user_library.sql"
 
 [[ -f $SCRIPT_ENV ]] && source $SCRIPT_ENV
 
@@ -27,6 +27,8 @@ CONFIG COMMANDS
       start application
   app-stop
       stop application
+  app-logs
+      show app logs
   boot
       initial setup - Start db and app
   shell-setup
@@ -41,6 +43,18 @@ CONFIG COMMANDS
       Starts database
   db-stop
       Stops database
+  db-shell
+      Start sql shell for database
+  local-db-start
+      Starts local database
+  local-db-stop
+      Stops local database
+  local-db-shell
+      Start local sql shell for database
+  local-boot
+      Start local app and db
+  local-stop
+      Stop locatl app and db
   run-on <node-ip>
       run command on a remote node
   run-on-all
@@ -182,7 +196,14 @@ function db-shell(){
   $YB_HOME/bin/ysqlsh -h $NODE_IP "$@"
 }
 function db-prepare-geopart(){
-  $DB_SHELL_CMD -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql "$@"
+    if [[ $YB_FIRST_NODE ==  $NODE_IP  ]]
+  then
+    $DB_SHELL_CMD -f $APP_ROOT_DIR/backend/src/main/resources/$DB_GEOPART_SCRIPT "$@"
+    $DB_SHELL_CMD -f $APP_ROOT_DIR/backend/src/main/resources/db/migration/V1.6__load_user_library.sql "$@"
+  else
+    echo "Skipping geopart DB configuration as its not the primary node"
+  fi
+
 }
 # Clone and build app
 function app-setup(){
@@ -221,15 +242,6 @@ function app-start(){
   pushd ${APP_ROOT_DIR}/frontend
   nohup npm start &>> /tmp/app-frontend.log &
   popd
-}
-
-function local-boot(){
-  local-db-start
-  app-start
-}
-function local-stop(){
-  local-db-stop
-  app-stop
 }
 
 function app-stop(){
@@ -307,6 +319,14 @@ function boot(){
 
 }
 
+function local-boot(){
+  local-db-start
+  app-start
+}
+function local-stop(){
+  local-db-stop
+  app-stop
+}
 OP=${1:-_help}
 if [[ $# -gt 1 ]] ; then shift ; fi
 
