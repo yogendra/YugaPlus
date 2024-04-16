@@ -208,9 +208,10 @@ function app-stop(){
 }
 
 function search(){
+  prompt="$*"
   set -x
   http -b GET :8080/api/movie/search \
-    prompt=='A long time ago in a galaxy far, far away...' \
+    prompt=="$prompt" \
     rank==7 \
     X-Api-Key:$BACKEND_API_KEY
 }
