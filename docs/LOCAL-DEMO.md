@@ -1,11 +1,9 @@
 # Local Demo
 
-
 - App UI: http://localhost:3000
 - SQL Pad: http://localhost:3001
 
 # Search Flow
-
 
 ## Code FLow / Sequences
 
@@ -44,65 +42,63 @@ sequenceDiagram
 
 ```
 
-
 ## Start app
+
 ### Use Postgres
 
 1. Start Postgres on Docker
 
-    ```bash
-    docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml down -v --remove-orphans
-    docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml up -d
-    sleep 5
-    docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml exec db-client psql -c 'select version();'
-    ```
-
+   ```bash
+   docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml down -v --remove-orphans
+   docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml up -d
+   sleep 5
+   docker compose -f $PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml exec db-client psql -c 'select version();'
+   ```
 
 1. Run Backend application
 
-    ```bash
-    cd $PROJECT_ROOT/backend
-    mvn clean package -DskipTests
-    export BACKEND_API_KEY=superbowl-2024
-    java -jar target/*.jar
-    ```
+   ```bash
+   cd $PROJECT_ROOT/backend
+   mvn clean package -DskipTests
+   export BACKEND_API_KEY=superbowl-2024
+   java -jar target/*.jar
+   ```
 
 1. Run Frontend application
 
-    ```bash
-    cd $PROJECT_ROOT/frontend
-    npm install
-    npm start
-    ```
+   ```bash
+   cd $PROJECT_ROOT/frontend
+   npm install
+   npm start
+   ```
 
 ### Use YugabyteDB
 
 1. Start YugabyteDB on Docker
 
-    ```bash
-    docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml down -v --remove-orphans
-    docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml up -d
-    sleep 5
-    docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml exec db-client ysqlsh -c 'select version();'
-    ```
-
+   ```bash
+   docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml down -v --remove-orphans
+   docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml up -d
+   sleep 5
+   docker compose -f $PROJECT_ROOT/deployment/docker/yb.docker-compose.yaml exec db-client ysqlsh -c 'select version();'
+   ```
 
 1. Run Backend application
 
-    ```bash
-    cd $PROJECT_ROOT/backend
-    mvn clean package -DskipTests
-    export BACKEND_API_KEY=superbowl-2024
-    java -jar target/*.jar --spring.profiles.active=yb
-    ```
+   ```bash
+   cd $PROJECT_ROOT/backend
+   mvn clean package -DskipTests
+   export BACKEND_API_KEY=superbowl-2024
+   java -jar target/*.jar --spring.profiles.active=yb
+   ```
 
 1. Run Frontend **application**
 
-    ```bash
-    cd $PROJECT_ROOT/frontend
-    npm install
-    npm run
-    ```
+   ```bash
+   cd $PROJECT_ROOT/frontend
+   npm install
+   npm run
+   ```
 
 ### Run local demo flow
 
@@ -110,34 +106,36 @@ sequenceDiagram
 2. Start app
 3. Open [web ui][web-ui]
 
-    ![Local Web Login UI](images/01-local-app-ui-login.png)
+   ![Local Web Login UI](images/01-local-app-ui-login.png)
 
-    Login with credentials (user1@gmail.com/MyYugaPlusPassword)
-1. Explain UI
+   Login with credentials (user1@gmail.com/MyYugaPlusPassword)
 
-    ![](images/02-local-app-search-ui.png)
+4. Explain UI
 
-    1. User Library that comes from `user_library` table and edited with `/api/library/*` APIs
+   ![](images/02-local-app-search-ui.png)
 
-      ![](images/03-local-app-user-library.png)
+   1. User Library that comes from `user_library` table and edited with `/api/library/*` APIs
 
-    1. Search prompt user Open AI and `movie` table.  Search movie `A long time ago in a galaxy far far away`
+   ![](images/03-local-app-user-library.png)
 
-      ![](images/04-local-app-search.png)
+   1. Search prompt user Open AI and `movie` table. Search movie `A long time ago in a galaxy far far away`
 
-3. Search via api
+   ![](images/04-local-app-search.png)
 
-    ```bash
-    http -b GET :8080/api/movie/search prompt=='A long time ago in a galaxy far far away' rank==5 X-Api-Key:$BACKEND_API_KEY
-    ```
+5. Search via api
 
-    Same thing can be done via demo simple script
+   ```bash
+   http -b GET :8080/api/movie/search prompt=='A long time ago in a galaxy far far away' rank==5 X-Api-Key:$BACKEND_API_KEY
+   ```
 
-    ```bash
-    deployment/demo search 'Movie about Sports'
-    ```
+   Same thing can be done via demo simple script
 
-4. Show library in database
+   ```bash
+   deployment/demo search 'Movie about Sports'
+   ```
+
+6. Show library in database
+
    1. On the terminal start sql shell **or** use any SQL tool
 
       Start a new shell for local db
@@ -156,264 +154,242 @@ sequenceDiagram
       deployment/demo library user1@gmail.com
       ```
 
+7. Add movie `Star Wars: Episode II - Attack of the Clones`.
 
+   Show updated libray
 
+   ```bash
+   deployment/demo library user1@gmail.com
+   ```
 
-5. Add movie `Star Wars: Episode II - Attack of the Clones`.
+8. Show API call to alter movie library
 
-    Show updated libray
+   1. Add a movie
 
-    ```bash
-    deployment/demo library user1@gmail.com
-    ```
+      ```bash
+      http -b PUT :8080/api/library/add/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      http -b PUT :8080/api/library/add/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      http -b PUT :8080/api/library/add/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      ```
 
-6.  Show API call to alter movie library
+   2. Show library
 
-    1. Add a movie
+      ```
+      deployment/demo library user1@gmail.com
+      ```
 
-        ```bash
-        http -b PUT :8080/api/library/add/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        http -b PUT :8080/api/library/add/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        http -b PUT :8080/api/library/add/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        ```
+   3. Delete movie
 
-    2. Show library
+      ```bash
+      http -b DELETE :8080/api/library/remove/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      http -b DELETE :8080/api/library/remove/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      http -b DELETE :8080/api/library/remove/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+      ```
 
-        ```
-        deployment/demo library user1@gmail.com
-        ```
+   4. Show library
 
-    3. Delete movie
-        ```bash
-        http -b DELETE :8080/api/library/remove/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        http -b DELETE :8080/api/library/remove/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        http -b DELETE :8080/api/library/remove/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-        ```
+      ```
+      deployment/demo library user1@gmail.com
+      ```
 
-    2. Show library
+   Simple script to do the same
 
-        ```
-        deployment/demo library user1@gmail.com
-        ```
-
-
-
-    Simple script to do the same
-
-    ```bash
-    deployment/demo update user1@gmail.com
-    ```
-
-
+   ```bash
+   deployment/demo update user1@gmail.com
+   ```
 
 ## Run Cloud Demo
 
+### User Mapping
+
+| email           | full_name        | user_location | update                        |
+| --------------- | ---------------- | ------------- | ----------------------------- |
+| arisa@gmail.com | Arisa Izuno      | Tokyo         | `demo update arisa@gmail.com` |
+| ron4@gmail.com  | Ron Xing         | Kuala Lumpur  | `demo update ron4@gmail.com`  |
+| srini@gmail.com | Srinivasa Vasu   | Chennai       | `demo update srini@gmail.com` |
+| user1@gmail.com | John Doe         | New York      | `demo update user1@gmail.com` |
+| user2@gmail.com | Emely Smith      | Chicago       | `demo update user2@gmail.com` |
+| user3@gmail.com | Michael Williams | Los Angeles   | `demo update user3@gmail.com` |
+| user4@gmail.com | Jessica Brown    | Boston        | `demo update user4@gmail.com` |
+| yogi@gmail.com  | Yogi Rampuria    | Singapore     | `demo update yogi@gmail.com`  |
+
+### Preferred Leader Demo
+
 1. Start application and database on all regions
 
-    ```bash
-    # All regions
-    demo boot
-    demo app-start
-    ```
+   ```bash
+   # All regions
+   demo boot
+   demo app-start
+   ```
 
 2. Open [Primary Region App UI][cloud-primary-web-ui]
 3. Login with credentials (arisa@gmail.com/MyYugaPlusPassword)
 4. Quick Show of UI
 5. Goto terminal and run search on all region and explain latency
 
-    ```bash
-    # All regions
-    demo search 'Movie about Sports'
-    ```
+   ```bash
+   # All regions
+   demo search 'Movie about Sports'
+   ```
 
 6. Run update on all regions and explain latency
 
-  ```bash
-  # New York
-  demo update user1@gmail.com
+    ```bash
+    # New York
+    demo update user1@gmail.com
 
-  # Chicago
-  demo update user2@gmail.com
+    # Chicago
+    demo update user2@gmail.com
 
-  # Los Angeles
-  demo update user3@gmail.com
+    # Los Angeles
+    demo update user3@gmail.com
 
-  # Boston
-  demo update user4@gmail.com
+    # Boston
+    demo update user4@gmail.com
 
-  ## APJ
-  # Tokyo
-  demo update arisa@gmail.com
-  # Singapore
-  demo update yogi@gmail.com
-  # Chennai
-  demo update srini@gmail.com
-  ```
+    ## APJ
+    # Tokyo
+    demo update arisa@gmail.com
+    # Singapore
+    demo update yogi@gmail.com
+    # Chennai
+    demo update srini@gmail.com
+    ```
 
+### Follower Read Demo
 
-7. Show library in database
+1. Start application and database on all regions
+
+   ```bash
+   # All regions
+   demo app-start enable_follower_reads
+   ```
+
+2. Run search on all region and explain latency
+
+   ```bash
+   # All regions
+   demo search 'Movie about Sports'
+   ```
+
+3. Run update on all regions and explain latency
 
     ```bash
-    demo library user1@gmail.com
+    # New York
+    demo update user1@gmail.com
+
+    # Chicago
+    demo update user2@gmail.com
+
+    # Los Angeles
+    demo update user3@gmail.com
+
+    # Boston
+    demo update user4@gmail.com
+
+    ## APJ
+    # Tokyo
+    demo update arisa@gmail.com
+    # Singapore
+    demo update yogi@gmail.com
+    # Chennai
+    demo update srini@gmail.com
     ```
-8. Search movie `Movie about Sports`
-9. Search via api - 2 times, first one will be slow
+
+### Geo Partition Demo
+
+1. Start application and database on all regions
+
+   ```bash
+   # All regions
+   demo db-prepare-geopart
+   demo app-start enable_follower_reads
+   ```
+
+2. Run update on all regions and explain latency
 
     ```bash
-    http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+    # New York
+    demo update user1@gmail.com
+
+    # Chicago
+    demo update user2@gmail.com
+
+    # Los Angeles
+    demo update user3@gmail.com
+
+    # Boston
+    demo update user4@gmail.com
+
+    ## APJ
+    # Tokyo
+    demo update arisa@gmail.com
+    # Singapore
+    demo update yogi@gmail.com
+    # Chennai
+    demo update srini@gmail.com
     ```
-
-10. Back in browser, add movie `Million Dollar Leg`
-11. Show API call to delete movie
-
-    ```bash
-    http -b DELETE :8080/api/library/remove/119564 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
-    ```
-12. Show movie library
-
-    ```sql
-    SELECT l.added_time, m.title
-    FROM
-      user_library l INNER JOIN movie m
-        ON l.movie_id = m.id
-    WHERE l.user_id = (select id from user_account where email = 'user1@gmail.com');
-    ```
-
-13. Show on UI
-
-
-
-## Follower Reads
-
-```
-demo app-start enable_follower_reads
-```
-NE
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
-South
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
-
-South
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
-## Geo Partition
-
-
-```
-ysqlsh -h $NODE_IP -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
-```
-
-NE
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
-South
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
-
-South
-
-```
-http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
-http -b DELETE :8080/api/library/remove/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
-http -b PUT :8080/api/library/add/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
-
-```
-
 
 ## Other commands
 
-
-
 1. YugabyteDB - Full Stack
 
+   ```bash
+   docker compose -f $PROJECT_ROOT/deployment/docker/yb.yaml down -v --remove-orphans
+   docker compose -f $PROJECT_ROOT/deployment/docker/yb.yaml up -d
+   ```
 
-    ```bash
-    docker compose -f $PROJECT_ROOT/deployment/docker/yb.yaml down -v --remove-orphans
-    docker compose -f $PROJECT_ROOT/deployment/docker/yb.yaml up -d
-    ```
+   ```
 
-    ```
+   ```
 
 1. Postgres - Full Stack
 
-
-    ```bash
-    docker compose -f $PROJECT_ROOT/deployment/docker/pg.yaml down -v --remove-orphans
-    docker compose -f $PROJECT_ROOT/deployment/docker/pg.yaml up -d
-    ```
+   ```bash
+   docker compose -f $PROJECT_ROOT/deployment/docker/pg.yaml down -v --remove-orphans
+   docker compose -f $PROJECT_ROOT/deployment/docker/pg.yaml up -d
+   ```
 
 1. Load data in YB
 
-    ```bash
-    ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
-    ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
-    ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
-    ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
-    ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
+   ```bash
+   ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
+   ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
+   ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
+   ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
+   ysqlsh -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
 
-    # OR with dockerized setup
+   # OR with dockerized setup
 
-    docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
-    docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
-    docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
-    docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
-    docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
+   docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
+   docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
+   docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
+   docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
+   docker exec -it docker-db-client-1 ysqlsh -f /project/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
 
-    ```
+   ```
+
 1. Load data in PG
 
-    ```bash
-    psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
-    psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
-    psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
-    psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
-    psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
+   ```bash
+   psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
+   psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
+   psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
+   psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
+   psql -f $PROJECT_ROOT/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
 
-    # OR with dockerized setup
+   # OR with dockerized setup
 
-    docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
-    docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
-    docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
-    docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
-    docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
+   docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1__enable_pgvector.sql
+   docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.1__create_movie_table.sql
+   docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.2__load_movie_dataset_with_embeddings.sql
+   docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.3__create_user_table.sql
+   docker exec -it docker-db-client-1 psql -f /project/backend/src/main/resources/db/migration/V1.4__create_user_library_table.sql
 
-    ```
-
+   ```
 
 ## Search Code
-
 
 ```java
 
