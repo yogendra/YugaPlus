@@ -6,10 +6,13 @@ SCRIPT_NAME=$(basename $0)
 SCRIPT_ENV=$SCRIPT_DIR/$SCRIPT_NAME.env
 SCRIPT=$0
 YB_HOME=$HOME/yugabyte
+DB_SHELL_CMD=${DB_SHELL_CMD:-db-shell}
+LOCAL_DB_COMPOSE=${LOCAL_DB_COMPOSE:-$PROJECT_ROOT/deployment/docker/pg.docker-compose.yaml}
+
 
 [[ -f $SCRIPT_ENV ]] && source $SCRIPT_ENV
 
-APP_ROOT_DIR=$HOME/sample_apps/${APP_MACHINE_NAME}
+APP_ROOT_DIR=${APP_ROOT_DIR:-HOME/sample_apps/${APP_MACHINE_NAME}}
 
 function _help(){
   cat <<EOF
@@ -83,7 +86,7 @@ function shell(){
   tmux new-window -a -t demo:admin -n local
 
   tmux new-window -a -t demo:local -n db
-  tmux send-keys -t demo:db ysqlsh Space -h Space $NODE_IP C-m
+  tmux send-keys -t demo:db demo Space db-shell C-m
 
   tmux select-window -t demo:local
   tmux attach-session -t demo
@@ -104,6 +107,22 @@ function _db_wait(){
     sleep $((1 + $RANDOM % 10))
   done
   echo " Ready"
+}
+function local-db-start(){
+  local-db-stop
+  docker compose -f $LOCAL_DB_COMPOSE up -d
+  sleep 5
+  local-db-shell -c 'select version();'
+}
+function local-db-stop(){
+  docker compose -f $LOCAL_DB_COMPOSE down -v --remove-orphans
+}
+function local-db-shell(){
+  if [[  $1 == local-db-shell ]]; then
+    docker compose -f $LOCAL_DB_COMPOSE exec db-client psql -h db
+  else
+    docker compose -f $LOCAL_DB_COMPOSE exec db-client psql -h db "$@"
+  fi
 }
 function db-start(){
   if [[ $YB_FIRST_NODE == $NODE_IP  ]]
@@ -153,16 +172,17 @@ function db-configure(){
       -master_addresses $YB_MASTERS \
       set_preferred_zones $ZONE_PREFERENCE
 
-    $YB_HOME/bin/ysqlsh -h $NODE_IP -c 'ALTER ROLE yugabyte SET yb_silence_advisory_locks_not_supported_error=on;'
+    $DB_SHELL_CMD -c 'ALTER ROLE yugabyte SET yb_silence_advisory_locks_not_supported_error=on;'
   else
     echo "Skipping DB configuration as its not the primary node"
   fi
 }
 function db-shell(){
+  # shift
   $YB_HOME/bin/ysqlsh -h $NODE_IP "$@"
 }
 function db-prepare-geopart(){
-  $YB_HOME/bin/ysqlsh -h $NODE_IP -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql "$@"
+  $DB_SHELL_CMD -f $APP_ROOT_DIR/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql "$@"
 }
 # Clone and build app
 function app-setup(){
@@ -202,11 +222,24 @@ function app-start(){
   nohup npm start &>> /tmp/app-frontend.log &
   popd
 }
-function app-stop(){
-  killall -u yugabyte java &>> /dev/null || echo "No running java processes found"
-  killall -u yugabyte node &>> /dev/null || echo "No running java processes found"
+
+function local-boot(){
+  local-db-start
+  app-start
+}
+function local-stop(){
+  local-db-stop
+  app-stop
 }
 
+function app-stop(){
+  killall -u $USER java &>> /dev/null || echo "No running java processes found"
+  killall -u $USER node &>> /dev/null || echo "No running java processes found"
+  killall -u $USER npm &>> /dev/null || echo "No running java processes found"
+}
+function app-logs(){
+  tail -f /tmp/app-*.log
+}
 function search(){
   prompt="$*"
   set -x
@@ -218,18 +251,22 @@ function search(){
 function update(){
   appuser=$1;shift
   set -x
-
+  library $appuser
   http -b DELETE :8080/api/library/remove/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b DELETE :8080/api/library/remove/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b DELETE :8080/api/library/remove/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
-
+  library $appuser
   http -b PUT :8080/api/library/add/11 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
+  library $appuser
 }
 function library(){
   appuser=$1;shift
-  ysqlsh -a -h $NODE_IP -c "SELECT l.added_time, m.title FROM user_library l INNER JOIN movie m ON l.movie_id = m.id WHERE l.user_id = (select id from user_account where email = '$appuser');"
+  db-shell -a -c "SELECT u.email, u.user_location, l.added_time, m.id, m.title FROM user_library l INNER JOIN movie m ON l.movie_id = m.id INNER JOIN user_account u ON l.user_id = u.id and u.email = '$appuser';"
+}
+function users(){
+  db-shell -a -c "select email, full_name, user_location, id, tableoid::regclass from user_account order by email;"
 }
 function run-on(){
   node=$1; shift
