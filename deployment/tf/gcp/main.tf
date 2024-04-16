@@ -86,6 +86,7 @@ export GITHUB_REPO="${local.github-repo}"
 export GIT_BRANCH="${local.git-branch}"
 export REACT_APP_RUNTIME_ENVIRONMENT="docker"
 export SPRING_FLYWAY_ENABLED="${local.node-private-ips[0] == google_compute_address.private-ip[region].address ? "true" : "false"}"
+export DB_GEOPART_SCRIPT=V2__create_geo_partitioned_user_library-apj.sql
 EOT
   }
 }
