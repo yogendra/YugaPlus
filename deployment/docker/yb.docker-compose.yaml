@@ -61,7 +61,7 @@ services:
       PGHOST: ${DB_HOST:-db}
       PGPORT: ${DB_PORT:-5433}
     volumes:
-    - ${PROJECT_ROOT}:/project
+    - ${PROJECT_ROOT}:${PROJECT_ROOT}
     depends_on:
       db:
         condition: service_healthy
