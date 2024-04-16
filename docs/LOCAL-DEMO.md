@@ -63,6 +63,7 @@ sequenceDiagram
     ```bash
     cd $PROJECT_ROOT/backend
     mvn clean package -DskipTests
+    export BACKEND_API_KEY=superbowl-2024
     java -jar target/*.jar
     ```
 
@@ -91,10 +92,11 @@ sequenceDiagram
     ```bash
     cd $PROJECT_ROOT/backend
     mvn clean package -DskipTests
+    export BACKEND_API_KEY=superbowl-2024
     java -jar target/*.jar --spring.profiles.active=yb
     ```
 
-1. Run Frontend application
+1. Run Frontend **application**
 
     ```bash
     cd $PROJECT_ROOT/frontend
@@ -102,10 +104,253 @@ sequenceDiagram
     npm run
     ```
 
-### Run demo flow
+### Run local demo flow
 
-1. Open [web ui][web-ui]
-2. Login with credentials (user1@gmail.com/MyYugaPlusPassword)
+1. Start postgres
+2. Start app
+3. Open [web ui][web-ui]
+
+    ![Local Web Login UI](images/01-local-app-ui-login.png)
+
+    Login with credentials (user1@gmail.com/MyYugaPlusPassword)
+1. Explain UI
+
+    ![](images/02-local-app-search-ui.png)
+
+    1. User Library that comes from `user_library` table and edited with `/api/library/*` APIs
+
+      ![](images/03-local-app-user-library.png)
+
+    1. Search prompt user Open AI and `movie` table.  Search movie `A long time ago in a galaxy far far away`
+
+      ![](images/04-local-app-search.png)
+
+3. Search via api
+
+    ```bash
+    http -b GET :8080/api/movie/search prompt=='A long time ago in a galaxy far far away' rank==5 X-Api-Key:$BACKEND_API_KEY
+    ```
+
+    Same thing can be done via demo simple script
+
+    ```bash
+    deployment/demo search 'Movie about Sports'
+    ```
+
+4. Show library in database
+   1. On the terminal start sql shell **or** use any SQL tool
+
+      Start a new shell for local db
+
+      ```bash
+      docker exec -it docker-db-client-1 psql -h db -c "SELECT u.email, u.user_location, l.added_time, m.id, m.title FROM user_library l INNER JOIN movie m ON l.movie_id = m.id INNER JOIN user_account u ON l.user_id = u.id and u.email = 'user1@gmai.com';"
+
+      #OR
+
+      docker exec -it docker-db-client-1 ysqlsh -h db -c "SELECT u.email, u.user_location, l.added_time, m.id, m.title FROM user_library l INNER JOIN movie m ON l.movie_id = m.id INNER JOIN user_account u ON l.user_id = u.id and u.email = 'user1@gmai.com';"
+      ```
+
+      Same thing can be done via simple script
+
+      ```bash
+      deployment/demo library user1@gmail.com
+      ```
+
+
+
+
+5. Add movie `Star Wars: Episode II - Attack of the Clones`.
+
+    Show updated libray
+
+    ```bash
+    deployment/demo library user1@gmail.com
+    ```
+
+6.  Show API call to alter movie library
+
+    1. Add a movie
+
+        ```bash
+        http -b PUT :8080/api/library/add/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        http -b PUT :8080/api/library/add/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        http -b PUT :8080/api/library/add/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        ```
+
+    2. Show library
+
+        ```
+        deployment/demo library user1@gmail.com
+        ```
+
+    3. Delete movie
+        ```bash
+        http -b DELETE :8080/api/library/remove/11 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        http -b DELETE :8080/api/library/remove/1891 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        http -b DELETE :8080/api/library/remove/1895 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+        ```
+
+    2. Show library
+
+        ```
+        deployment/demo library user1@gmail.com
+        ```
+
+
+
+    Simple script to do the same
+
+    ```bash
+    deployment/demo update user1@gmail.com
+    ```
+
+
+
+## Run Cloud Demo
+
+1. Start application and database on all regions
+
+    ```bash
+    # All regions
+    demo boot
+    demo app-start
+    ```
+
+2. Open [Primary Region App UI][cloud-primary-web-ui]
+3. Login with credentials (arisa@gmail.com/MyYugaPlusPassword)
+4. Quick Show of UI
+5. Goto terminal and run search on all region and explain latency
+
+    ```bash
+    # All regions
+    demo search 'Movie about Sports'
+    ```
+
+6. Run update on all regions and explain latency
+
+  ```bash
+  # New York
+  demo update user1@gmail.com
+
+  # Chicago
+  demo update user2@gmail.com
+
+  # Los Angeles
+  demo update user3@gmail.com
+
+  # Boston
+  demo update user4@gmail.com
+
+  ## APJ
+  # Tokyo
+  demo update arisa@gmail.com
+  # Singapore
+  demo update yogi@gmail.com
+  # Chennai
+  demo update srini@gmail.com
+  ```
+
+
+7. Show library in database
+
+    ```bash
+    demo library user1@gmail.com
+    ```
+8. Search movie `Movie about Sports`
+9. Search via api - 2 times, first one will be slow
+
+    ```bash
+    http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+    ```
+
+10. Back in browser, add movie `Million Dollar Leg`
+11. Show API call to delete movie
+
+    ```bash
+    http -b DELETE :8080/api/library/remove/119564 user==user1@gmail.com X-Api-Key:$BACKEND_API_KEY
+    ```
+12. Show movie library
+
+    ```sql
+    SELECT l.added_time, m.title
+    FROM
+      user_library l INNER JOIN movie m
+        ON l.movie_id = m.id
+    WHERE l.user_id = (select id from user_account where email = 'user1@gmail.com');
+    ```
+
+13. Show on UI
+
+
+
+## Follower Reads
+
+```
+demo app-start enable_follower_reads
+```
+NE
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
+South
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
+
+South
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
+## Geo Partition
+
+
+```
+ysqlsh -h $NODE_IP -f $HOME/sample_apps/YugaPlus/backend/src/main/resources/V2__create_geo_partitioned_user_library-apj.sql
+```
+
+NE
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==arisa@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
+South
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==srini@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
+
+South
+
+```
+http GET :8080/api/movie/search prompt=='Movie about Sports' rank==5 X-Api-Key:$BACKEND_API_KEY
+http -b DELETE :8080/api/library/remove/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
+http -b PUT :8080/api/library/add/119564 user==yogi@gmail.com X-Api-Key:$BACKEND_API_KEY
+
+```
+
 
 ## Other commands
 
@@ -237,3 +482,4 @@ return response;
 ```
 
 [web-ui]: http://localhost:3000
+[cloud-primary-web-ui]: http://asia-northeast1.apjsb.ws.apj.yugabyte.com:3000
