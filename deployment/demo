@@ -226,6 +226,10 @@ function update(){
   http -b PUT :8080/api/library/add/1891 user==$appuser X-Api-Key:$BACKEND_API_KEY
   http -b PUT :8080/api/library/add/1895 user==$appuser X-Api-Key:$BACKEND_API_KEY
 }
+function library(){
+  appuser=$1;shift
+  ysqlsh -a -h $NODE_IP -c "SELECT l.added_time, m.title FROM user_library l INNER JOIN movie m ON l.movie_id = m.id WHERE l.user_id = (select id from user_account where email = '$appuser');"
+}
 function run-on(){
   node=$1; shift
   if [[ $node == $NODE_IP ]]; then
